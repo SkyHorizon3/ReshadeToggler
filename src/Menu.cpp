@@ -256,7 +256,7 @@ void Menu::AddNewMenu(std::map<std::string, std::vector<MenuToggleInformation>>&
 	static std::vector<std::string> currentEffects;
 	static bool toggled = false;
 
-	if (ImGui::BeginPopupModal("Create Menu Entries", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::BeginPopupModal("Create Menu Entries", NULL, ImGuiWindowFlags_NoResize))
 	{
 		// Reset static variables for each popup
 		if (ImGui::IsWindowAppearing())
@@ -461,7 +461,7 @@ void Menu::SpawnTimeSettings(ImGuiID dockspace_id)
 	// Add new effect
 	if (ImGui::Button("Add New Effect"))
 	{
-		ImGui::OpenPopup("Create Time Entry");
+		ImGui::OpenPopup("Create Time Entries");
 	}
 	AddNewTime(updatedInfoList);
 	ImGui::End();
@@ -559,7 +559,7 @@ void Menu::SpawnInteriorSettings(ImGuiID dockspace_id)
 	// Add new effect
 	if (ImGui::Button("Add New Effect"))
 	{
-		ImGui::OpenPopup("Create Interior Entry");
+		ImGui::OpenPopup("Create Interior Entries");
 	}
 	AddNewInterior(updatedInfoList);
 
@@ -665,7 +665,7 @@ void Menu::SpawnWeatherSettings(ImGuiID dockspace_id)
 	// Add new effect
 	if (ImGui::Button("Add New Effect"))
 	{
-		ImGui::OpenPopup("Create Weather Entry");
+		ImGui::OpenPopup("Create Weather Entries");
 	}
 	AddNewWeather(updatedInfoList);
 
@@ -674,8 +674,8 @@ void Menu::SpawnWeatherSettings(ImGuiID dockspace_id)
 
 void Menu::AddNewTime(std::map<std::string, std::vector<TimeToggleInformation>>& updatedInfoList)
 {
-	static std::string currentWorldSpace;
-	static std::string currentEffect;
+	static std::vector<std::string> currentWorldSpaces;
+	static std::vector<std::string> currentEffects;
 	static float currentStartTime;
 	static float currentStopTime;
 	static bool toggled = false;
@@ -683,13 +683,13 @@ void Menu::AddNewTime(std::map<std::string, std::vector<TimeToggleInformation>>&
 	static char startHourStr[3] = "00", startMinuteStr[3] = "00";
 	static char stopHourStr[3] = "00", stopMinuteStr[3] = "00";
 
-	if (ImGui::BeginPopupModal("Create Time Entry", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::BeginPopupModal("Create Time Entries", NULL, ImGuiWindowFlags_NoResize))
 	{
 		// Reset static variables for each popup
 		if (ImGui::IsWindowAppearing())
 		{
-			currentWorldSpace.clear();
-			currentEffect.clear();
+			currentWorldSpaces.clear();
+			currentEffects.clear();
 			toggled = false;
 			strcpy(startHourStr, "00");
 			strcpy(startMinuteStr, "00");
@@ -697,8 +697,8 @@ void Menu::AddNewTime(std::map<std::string, std::vector<TimeToggleInformation>>&
 			strcpy(stopMinuteStr, "00");
 		}
 
-		ImGui::Text("Select a Worldspace");
-		CreateCombo("Worldspace", currentWorldSpace, m_worldSpaces, ImGuiComboFlags_None);
+		ImGui::Text("Select Worldspaces");
+		CreateTreeNode("Worldspaces", currentWorldSpaces, m_worldSpaces);
 		ImGui::Separator();
 
 		// Start time
@@ -730,8 +730,8 @@ void Menu::AddNewTime(std::map<std::string, std::vector<TimeToggleInformation>>&
 		ImGui::PopItemWidth();
 
 		ImGui::Separator();
-		ImGui::Text("Select the Effect");
-		CreateCombo("Effect", currentEffect, m_effects, ImGuiComboFlags_None);
+		ImGui::Text("Select Effects");
+		CreateTreeNode("Effects", currentEffects, m_effects);
 		ImGui::SameLine();
 		ImGui::Checkbox("Toggled On", &toggled);
 
@@ -739,22 +739,23 @@ void Menu::AddNewTime(std::map<std::string, std::vector<TimeToggleInformation>>&
 		if (ImGui::Button("Finish"))
 		{
 			// Convert the input text to integers
-			int startHours = strlen(startHourStr) > 0 ? std::stoi(startHourStr) : 0;
-			int startMinutes = strlen(startMinuteStr) > 0 ? std::stoi(startMinuteStr) : 0;
-			int stopHours = strlen(stopHourStr) > 0 ? std::stoi(stopHourStr) : 0;
-			int stopMinutes = strlen(stopMinuteStr) > 0 ? std::stoi(stopMinuteStr) : 0;
+			const int startHours = strlen(startHourStr) > 0 ? std::stoi(startHourStr) : 0;
+			const int startMinutes = strlen(startMinuteStr) > 0 ? std::stoi(startMinuteStr) : 0;
+			const int stopHours = strlen(stopHourStr) > 0 ? std::stoi(stopHourStr) : 0;
+			const int stopMinutes = strlen(stopMinuteStr) > 0 ? std::stoi(stopMinuteStr) : 0;
 
 			// Convert hours and minutes into float (HH.MM) format
 			currentStartTime = startHours + (startMinutes / 100.0f);
 			currentStopTime = stopHours + (stopMinutes / 100.0f);
 
-			TimeToggleInformation info;
-			info.effectName = currentEffect;
-			info.startTime = currentStartTime;
-			info.stopTime = currentStopTime;
-			info.state = toggled;
+			for (const auto& ws : currentWorldSpaces)
+			{
+				for (const auto& effect : currentEffects)
+				{
+					updatedInfoList[ws].emplace_back(TimeToggleInformation{ effect, currentStartTime, currentStopTime, toggled });
+				}
+			}
 
-			updatedInfoList[currentWorldSpace].emplace_back(info);
 			Manager::GetSingleton()->setTimeToggleInfo(updatedInfoList);
 
 			ImGui::CloseCurrentPopup();
@@ -942,37 +943,40 @@ std::vector<UniformInfo> Menu::EditValues(const std::string& effectName)
 
 void Menu::AddNewInterior(std::map<std::string, std::vector<InteriorToggleInformation>>& updatedInfoList)
 {
-	static std::string currentCell;
-	static std::string currentEffect;
+	static std::vector<std::string> currentCells;
+	static std::vector<std::string> currentEffects;
 	static bool toggled = false;
 
-	if (ImGui::BeginPopupModal("Create Interior Entry", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::BeginPopupModal("Create Interior Entries", NULL, ImGuiWindowFlags_NoResize))
 	{
 		// Reset static variables for each popup
 		if (ImGui::IsWindowAppearing())
 		{
-			currentCell.clear();
-			currentEffect.clear();
+			currentCells.clear();
+			currentEffects.clear();
 			toggled = false;
 		}
 
-		ImGui::Text("Select an Interior Cell");
-		CreateCombo("Cell", currentCell, m_interiorCells, ImGuiComboFlags_None);
+		ImGui::Text("Select Interior Cells");
+		CreateTreeNode("Cells", currentCells, m_interiorCells);
 		ImGui::Separator();
 
-		ImGui::Text("Select the Effect");
-		CreateCombo("Effect", currentEffect, m_effects, ImGuiComboFlags_None);
+		ImGui::Text("Select Effects");
+		CreateTreeNode("Effects", currentEffects, m_effects);
 		ImGui::SameLine();
 		ImGui::Checkbox("Toggled On", &toggled);
 
 		ImGui::Separator();
 		if (ImGui::Button("Finish"))
 		{
-			InteriorToggleInformation info;
-			info.effectName = currentEffect;
-			info.state = toggled;
+			for (const auto& cell : currentCells)
+			{
+				for (const auto& effect : currentEffects)
+				{
+					updatedInfoList[cell].emplace_back(InteriorToggleInformation{ effect, toggled });
+				}
+			}
 
-			updatedInfoList[currentCell].emplace_back(info);
 			Manager::GetSingleton()->setInteriorToggleInfo(updatedInfoList);
 
 			ImGui::CloseCurrentPopup();
@@ -990,42 +994,48 @@ void Menu::AddNewInterior(std::map<std::string, std::vector<InteriorToggleInform
 
 void Menu::AddNewWeather(std::map<std::string, std::vector<WeatherToggleInformation>>& updatedInfoList)
 {
-	static std::string currentWorldSpace;
-	static std::string currentWeatherFlag;
-	static std::string currentEffect;
+	static std::vector<std::string> currentWorldSpaces;
+	static std::vector<std::string> currentEffects;
+	static std::vector<std::string> currentWeatherFlags;
 	static bool toggled = false;
 
-	if (ImGui::BeginPopupModal("Create Weather Entry", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::BeginPopupModal("Create Weather Entries", NULL, ImGuiWindowFlags_NoResize))
 	{
 		// Reset static variables for each popup
 		if (ImGui::IsWindowAppearing())
 		{
-			currentWorldSpace.clear();
-			currentWeatherFlag.clear();
-			currentEffect.clear();
+			currentWorldSpaces.clear();
+			currentWeatherFlags.clear();
+			currentEffects.clear();
 			toggled = false;
 		}
 
-		ImGui::Text("Select a Worldspace");
-		CreateCombo("Worldspace", currentWorldSpace, m_worldSpaces, ImGuiComboFlags_None);
-		ImGui::Text("Select a Weather");
-		CreateCombo("Weather", currentWeatherFlag, m_weatherFlags, ImGuiComboFlags_None);
+		ImGui::Text("Select Worldspaces");
+		CreateTreeNode("Worldspaces", currentWorldSpaces, m_worldSpaces);
+
+		ImGui::Text("Select Weatherflags");
+		CreateTreeNode("Weatherflags", currentWeatherFlags, m_weatherFlags);
 		ImGui::Separator();
 
-		ImGui::Text("Select the Effect");
-		CreateCombo("Effect", currentEffect, m_effects, ImGuiComboFlags_None);
+		ImGui::Text("Select Effects");
+		CreateTreeNode("Effects", currentEffects, m_effects);
 		ImGui::SameLine();
 		ImGui::Checkbox("Toggled On", &toggled);
 
 		ImGui::Separator();
 		if (ImGui::Button("Finish"))
 		{
-			WeatherToggleInformation info;
-			info.weatherFlag = currentWeatherFlag;
-			info.effectName = currentEffect;
-			info.state = toggled;
+			for (const auto& ws : currentWorldSpaces)
+			{
+				for (const auto& effect : currentEffects)
+				{
+					for (const auto& flag : currentWeatherFlags)
+					{
+						updatedInfoList[ws].emplace_back(WeatherToggleInformation{ effect, flag, toggled });
+					}
+				}
+			}
 
-			updatedInfoList[currentWorldSpace].emplace_back(info);
 			Manager::GetSingleton()->setWeatherToggleInfo(updatedInfoList);
 
 			ImGui::CloseCurrentPopup();

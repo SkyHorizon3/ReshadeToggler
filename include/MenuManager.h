@@ -36,5 +36,4 @@ public:
 
 	void SetColors();
 	void RemoveColors();
-
 };

@@ -72,7 +72,7 @@ void MessageListener(SKSE::MessagingInterface::Message* message)
 extern "C" DLLEXPORT constinit auto SKSEPlugin_Version = []()
 	{
 		SKSE::PluginVersionData v;
-		v.PluginName(Plugin::NAME.data());
+		v.PluginName(Plugin::NAME);
 		v.AuthorName("SkyHorizon and PhilikusHD");
 		v.PluginVersion(Plugin::VERSION);
 		v.UsesAddressLibrary();
@@ -81,7 +81,7 @@ extern "C" DLLEXPORT constinit auto SKSEPlugin_Version = []()
 	}
 ();
 
-extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface*, SKSE::PluginInfo * pluginInfo)
+extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface*, SKSE::PluginInfo* pluginInfo)
 {
 	pluginInfo->name = SKSEPlugin_Version.pluginName;
 	pluginInfo->infoVersion = SKSE::PluginInfo::kVersion;
@@ -122,12 +122,12 @@ SKSEPluginLoad(const SKSE::LoadInterface* skse)
 	spdlog::flush_on(spdlog::level::info);
 #endif
 
-	SKSE::log::info("Game version : {}", skse->RuntimeVersion());
+	SKSE::log::info("Game version: {}", skse->RuntimeVersion());
 
 	SKSE::AllocTrampoline(28);
 
 	if (!Load())
-		SKSE::stl::report_and_fail("ReShade not present!\nIf you want to use ReShade Effect Toggler, please install ReShade."sv);
+		SKSE::stl::report_and_fail("ReShade not present!\nIf you want to use ReShade Effect Toggler, please install ReShade with full add-on support."sv);
 
 	SKSE::GetMessagingInterface()->RegisterListener(MessageListener);
 
