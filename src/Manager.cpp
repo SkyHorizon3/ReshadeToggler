@@ -837,7 +837,7 @@ std::string Manager::getUniformType(const reshade::api::effect_uniform_variable&
 		typeName = "unsigned int";
 		break;
 	case format::r32_typeless:
-		typeName = "typeless";
+		typeName = "bool";
 		break;
 	default:
 		typeName = "unknown";

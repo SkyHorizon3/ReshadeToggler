@@ -813,10 +813,11 @@ void Menu::EditValues(const std::string& effectName, std::vector<UniformInfo>& t
 				return existingInfo.uniformVariable == uniformInfo.uniformVariable;
 				});
 
+			std::string type = Manager::GetSingleton()->getUniformType(uniformInfo.uniformVariable);
+
 			// If the uniform is not found in the vector, we need to fetch it and store its value
 			if (it == toReturn.end())
 			{
-				std::string type = Manager::GetSingleton()->getUniformType(uniformInfo.uniformVariable);
 
 				// Fetch and store values if not already prefetched
 				if (!uniformInfo.prefetched)
@@ -841,14 +842,18 @@ void Menu::EditValues(const std::string& effectName, std::vector<UniformInfo>& t
 				uniformInfo = *it;  // Replace the value with the one in toReturn
 			}
 
-			// If it's a bool type, show a checkbox and modify the temporary value
-			// Should probably check if the type is actually a bool here lol
-			// Don't care, suck ma dick biatch
-			if (uniformInfo.prefetched && ImGui::Checkbox(uniformInfo.uniformName.c_str(), &uniformInfo.tempBoolValue))
+			// I don't think we update the vector, should investigate
+			if (uniformInfo.prefetched)
 			{
-				// Modify the value directly here
-				uint8_t boolAsUint8 = static_cast<uint8_t>(uniformInfo.tempBoolValue);
-				uniformInfo.setBoolValues(&boolAsUint8, 1);
+				if (type.find("bool") != std::string::npos)
+				{
+					if (ImGui::Checkbox(uniformInfo.uniformName.c_str(), &uniformInfo.tempBoolValue))
+					{
+						// Modify the value directly here
+						uint8_t boolAsUint8 = static_cast<uint8_t>(uniformInfo.tempBoolValue);
+						uniformInfo.setBoolValues(&boolAsUint8, 1);
+					}
+				}
 			}
 
 			// Update the uniform in 'toReturn' vector
