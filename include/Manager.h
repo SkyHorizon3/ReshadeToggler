@@ -5,28 +5,47 @@ struct UniformInfo
 {
 	std::string uniformName;
 	reshade::api::effect_uniform_variable uniformVariable;
-	std::vector<char> boolValues;
+	std::vector<uint8_t> boolValues;
 	std::vector<int> intValues;
 	std::vector<float> floatValues;
 	std::vector<unsigned int> uintValues;
 
-	// Methods to set pointers to values used by ReShade
+	bool prefetched = false;
+	bool tempBoolValue = false;  
+	float tempFloatValues[4] = { 0.0f };  
+	int tempIntValues[4] = { 0 };  
+	unsigned int tempUIntValues[4] = { 0 };
+
+	void setBoolValues(uint8_t* values, size_t count) {
+		if (count > boolValues.size()) {
+			boolValues.resize(count);
+		}
+		std::copy(values, values + count, boolValues.begin());
+	}
+
 	void setIntValues(int* values, size_t count) {
-		intValues.assign(values, values + count);
+		if (count > intValues.size()) {
+			intValues.resize(count);
+		}
+		std::copy(values, values + count, intValues.begin());
 	}
 
 	void setFloatValues(float* values, size_t count) {
-		floatValues.assign(values, values + count);
-	}
-
-	void setBoolValues(char* values, size_t count) {
-		boolValues.assign(values, values + count);
+		if (count > floatValues.size()) {
+			floatValues.resize(count);
+		}
+		std::copy(values, values + count, floatValues.begin());
 	}
 
 	void setUIntValues(unsigned int* values, size_t count) {
-		uintValues.assign(values, values + count);
+		if (count > uintValues.size()) {
+			uintValues.resize(count);
+		}
+		std::copy(values, values + count, uintValues.begin());
 	}
+
 };
+
 
 struct MenuToggleInformation
 {

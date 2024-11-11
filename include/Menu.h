@@ -22,7 +22,7 @@ private:
 	void AddNewInterior(std::map<std::string, std::vector<InteriorToggleInformation>>& updatedInfoList);
 	void AddNewTime(std::map<std::string, std::vector<TimeToggleInformation>>& updatedInfoList);
 	void ClampInputValue(char* inputStr, int maxVal);
-	std::vector<UniformInfo> EditValues(const std::string& effectName);
+	void EditValues(const std::string& effectName, std::vector<UniformInfo>& toReturn);
 private:
 
 	char m_inputBuffer[256] = { 0 };

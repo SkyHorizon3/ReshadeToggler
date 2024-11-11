@@ -215,12 +215,23 @@ void Menu::SpawnMenuSettings(ImGuiID dockspace_id)
 
 				if (editingEffectIndex == globalIndex)
 				{
-					std::vector<UniformInfo> uniformInfos = EditValues(currentEditingEffect);
+					static std::vector<UniformInfo> uniformInfos;
+					EditValues(currentEditingEffect, uniformInfos);
 					if (!uniformInfos.empty())
 					{
 						for (auto& uniformInfo : uniformInfos)
 						{
-							updatedInfoList[menuName][editingEffectIndex].uniforms.emplace_back(uniformInfo);
+							auto& uniforms = updatedInfoList[menuName][editingEffectIndex].uniforms;
+
+							auto it = std::find_if(uniforms.begin(), uniforms.end(), [&uniformInfo](const UniformInfo& existingInfo) {
+								return existingInfo.uniformVariable == uniformInfo.uniformVariable;
+								});
+
+							// This is probably wrong, investigate.
+							if (it == uniforms.end())
+							{
+								uniforms.emplace_back(uniformInfo);
+							}
 						}
 					}
 
@@ -781,165 +792,94 @@ void Menu::ClampInputValue(char* inputStr, int maxVal)
 	}
 }
 
-std::vector<UniformInfo> Menu::EditValues(const std::string& effectName)
+void Menu::EditValues(const std::string& effectName, std::vector<UniformInfo>& toReturn)
 {
-
 	if (ImGui::BeginPopupModal("Edit Effect Values", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		std::vector<UniformInfo> toReturn;
-		ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]);
-
+		// I cooked stupid bs, but it sort of works ig. Suck my dick :)
 		ImGui::Text("Editing effect: %s", effectName.c_str());
-
-
 		ImGui::Spacing();
 		ImGui::Separator();
 		ImGui::Spacing();
+
+		// Get the list of uniforms for the effect
 		std::vector<UniformInfo> uniforms = Manager::GetSingleton()->enumerateUniformNames(effectName);
 
+		// Iterate through the uniforms for this effect
 		for (auto& uniformInfo : uniforms)
 		{
-			std::string type = Manager::GetSingleton()->getUniformType(uniformInfo.uniformVariable);
+			// Check if the uniform is already in the 'toReturn' vector to avoid resetting it
+			auto it = std::find_if(toReturn.begin(), toReturn.end(), [&uniformInfo](const UniformInfo& existingInfo) {
+				return existingInfo.uniformVariable == uniformInfo.uniformVariable;
+				});
 
-			ImGui::Text("Uniform: %s", uniformInfo.uniformName.c_str());
-			ImGui::SameLine();
-			ImGui::TextDisabled("[%s]", type.c_str());
-
-
-			if (type.find("bool") != std::string::npos)
+			// If the uniform is not found in the vector, we need to fetch it and store its value
+			if (it == toReturn.end())
 			{
-				bool value = false;
-				Manager::GetSingleton()->getUniformValue<bool>(uniformInfo.uniformVariable, &value, 1);
-				if (ImGui::Checkbox(uniformInfo.uniformName.c_str(), &value)) {
-					uniformInfo.setBoolValues(reinterpret_cast<char*>(&value), 1);
-				}
-			}
-			else if (type.find("float") != std::string::npos)
-			{
-				float values[4] = { 0.0f };
-				int numElements = std::min(4, Manager::GetSingleton()->getUniformDimension(uniformInfo.uniformVariable));
+				std::string type = Manager::GetSingleton()->getUniformType(uniformInfo.uniformVariable);
 
-				Manager::GetSingleton()->getUniformValue<float>(uniformInfo.uniformVariable, values, numElements);
-
-				// Handle other float types (float1 or float2)
-				switch (numElements)
+				// Fetch and store values if not already prefetched
+				if (!uniformInfo.prefetched)
 				{
-				case 1:
-					if (ImGui::SliderFloat(uniformInfo.uniformName.c_str(), &values[0], 0.0f, 1.0f)) {
-						uniformInfo.setFloatValues(values, 1);
+					if (type.find("bool") != std::string::npos)
+					{
+						bool value = false;
+						Manager::GetSingleton()->getUniformValue<bool>(uniformInfo.uniformVariable, &value, 1);
+						uniformInfo.tempBoolValue = value;  // Store the value temporarily
 					}
-					break;
-				case 2:
-					if (ImGui::SliderFloat2(uniformInfo.uniformName.c_str(), values, 0.0f, 1.0f)) {
-						uniformInfo.setFloatValues(values, 2);
-					}
-					break;
-				case 3:
-					if (ImGui::ColorEdit3(uniformInfo.uniformName.c_str(), values)) {
-						uniformInfo.setFloatValues(values, 3);
-					}
-					break;
-				case 4:
-					if (ImGui::ColorEdit4(uniformInfo.uniformName.c_str(), values)) {
-						uniformInfo.setFloatValues(values, 4);
-					}
-					break;
+
+					// Mark it as prefetched
+					uniformInfo.prefetched = true;
 				}
 
+				// Now, add the uniform to the return vector
+				toReturn.emplace_back(uniformInfo);
 			}
-			else if (type.find("int") != std::string::npos)
+			else
 			{
-				// Handle multi-dimensional int types (int, int2, int3, int4)
-				int values[4] = { 0 };
-				int numElements = std::min(4, Manager::GetSingleton()->getUniformDimension(uniformInfo.uniformVariable));
-
-				Manager::GetSingleton()->getUniformValue<int>(uniformInfo.uniformVariable, values, numElements);
-
-				switch (numElements)
-				{
-				case 1:
-					if (ImGui::SliderInt(uniformInfo.uniformName.c_str(), &values[0], 0, 100)) {
-						uniformInfo.setIntValues(values, 1);
-					}
-					break;
-				case 2:
-					if (ImGui::SliderInt2(uniformInfo.uniformName.c_str(), values, 0, 100)) {
-						uniformInfo.setIntValues(values, 2);
-						break;
-				case 3:
-					if (ImGui::SliderInt3(uniformInfo.uniformName.c_str(), values, 0, 100)) {
-						uniformInfo.setIntValues(values, 3);
-					}
-					break;
-				case 4:
-					if (ImGui::SliderInt4(uniformInfo.uniformName.c_str(), values, 0, 100)) {
-						uniformInfo.setIntValues(values, 4);
-					}
-					break;
-					}
-
-				}
+				// If it's already in the vector, use the stored data
+				uniformInfo = *it;  // Replace the value with the one in toReturn
 			}
-			else if (type.find("unsigned int") != std::string::npos)
+
+			// If it's a bool type, show a checkbox and modify the temporary value
+			// Should probably check if the type is actually a bool here lol
+			// Don't care, suck ma dick biatch
+			if (uniformInfo.prefetched && ImGui::Checkbox(uniformInfo.uniformName.c_str(), &uniformInfo.tempBoolValue))
 			{
-				unsigned int values[4] = { 0 };  // Max size for vec4
-				int numElements = std::min(4, Manager::GetSingleton()->getUniformDimension(uniformInfo.uniformVariable));
-
-				Manager::GetSingleton()->getUniformValue<unsigned int>(uniformInfo.uniformVariable, values, numElements);
-
-				switch (numElements)
-				{
-				case 1:
-					if (ImGui::SliderScalar(uniformInfo.uniformName.c_str(), ImGuiDataType_U32, &values[0], 0, reinterpret_cast<void*>(100))) {
-						uniformInfo.setUIntValues(values, 1);
-					}
-					break;
-				case 2:
-					if (ImGui::SliderScalarN(uniformInfo.uniformName.c_str(), ImGuiDataType_U32, values, 2, 0, reinterpret_cast<void*>(100))) {
-						uniformInfo.setUIntValues(values, 2);
-					}
-					break;
-				case 3:
-					if (ImGui::SliderScalarN(uniformInfo.uniformName.c_str(), ImGuiDataType_U32, values, 3, 0, reinterpret_cast<void*>(100))) {
-						uniformInfo.setUIntValues(values, 3);
-					}
-					break;
-				case 4:
-					if (ImGui::SliderScalarN(uniformInfo.uniformName.c_str(), ImGuiDataType_U32, values, 4, 0, reinterpret_cast<void*>(100))) {
-						uniformInfo.setUIntValues(values, 4);
-					}
-					break;
-				}
+				// Modify the value directly here
+				uint8_t boolAsUint8 = static_cast<uint8_t>(uniformInfo.tempBoolValue);
+				uniformInfo.setBoolValues(&boolAsUint8, 1);
 			}
 
-			// Add a separator between different uniforms for visual clarity
-			ImGui::Spacing();
-			ImGui::Separator();
-			ImGui::Spacing();
+			// Update the uniform in 'toReturn' vector
+			// Replace the existing entry if it's already present
+			auto it2 = std::find_if(toReturn.begin(), toReturn.end(), [&uniformInfo](const UniformInfo& existingInfo) {
+				return existingInfo.uniformVariable == uniformInfo.uniformVariable;
+				});
 
-			toReturn.emplace_back(uniformInfo);
+			if (it2 != toReturn.end())
+			{
+				*it2 = uniformInfo;  // Update the existing entry with modified data
+			}
+			else
+			{
+				toReturn.emplace_back(uniformInfo);  // This case shouldn't be hit since we already checked above
+			}
 		}
 
-		if (ImGui::Button("Save"))
-		{
-			ImGui::CloseCurrentPopup();
-			ImGui::PopFont();
-			ImGui::EndPopup();
-			return toReturn;
-		}
-
-		// Add a cancel button to close the modal
-		if (ImGui::Button("Cancel"))
+		// Button to close the popup
+		if (ImGui::Button("Close"))
 		{
 			ImGui::CloseCurrentPopup();
 		}
 
-		ImGui::PopFont();
 		ImGui::EndPopup();
 	}
-
-	return {};
 }
+
+
+
+
 
 void Menu::AddNewInterior(std::map<std::string, std::vector<InteriorToggleInformation>>& updatedInfoList)
 {

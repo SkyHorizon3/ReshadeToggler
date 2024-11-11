@@ -778,7 +778,8 @@ std::vector<UniformInfo> Manager::enumerateUniformNames(const std::string& effec
 			{
 				bool value = false;
 				getUniformValue(uniform, &value, 1);
-				uniformInfo.setBoolValues(reinterpret_cast<char*>(value), 1);
+				uint8_t boolAsUint8 = static_cast<uint8_t>(value);
+				uniformInfo.setBoolValues(&boolAsUint8, 1);
 			}
 			else if (type.find("float") != std::string::npos)
 			{
