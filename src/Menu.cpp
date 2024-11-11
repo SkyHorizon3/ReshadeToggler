@@ -10,7 +10,7 @@ void Menu::SettingsMenu()
 	if (m_openSettingsMenu)
 	{
 		// TODO: ensure that we are only putting the colors onto our own window and its subwindows
-		SetColors();
+		// SetColors();
 
 		// Create the main settings window with docking enabled
 		ImGui::Begin("[PH] Settings Window", &m_openSettingsMenu);
@@ -58,7 +58,7 @@ void Menu::SettingsMenu()
 		case 4: SpawnWeatherSettings(dockspaceId); break;
 		}
 
-		RemoveColors();
+		// RemoveColors();
 	}
 }
 
