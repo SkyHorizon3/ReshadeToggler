@@ -251,13 +251,8 @@ void Manager::setUniformValues(UniformInfo& uniform)
 	}
 	else if (uniform.boolValue == 0 || uniform.boolValue == 1)
 	{
-		if (reinterpret_cast<bool*>(uniform.boolValue))
-			SKSE::log::info("Casting to bool is true - Name: {}", uniform.uniformName);
-
-		if (!reinterpret_cast<bool*>(uniform.boolValue))
-			SKSE::log::info("Casting to bool is false - Name: {}", uniform.uniformName);
-
-		manager->setUniformValue<bool>(uniform.uniformVariable, reinterpret_cast<bool*>(uniform.boolValue), 1);
+		bool tempBoolValue = static_cast<bool>(uniform.boolValue);
+		manager->setUniformValue<bool>(uniform.uniformVariable, &tempBoolValue, 1);
 	}
 }
 
@@ -808,8 +803,7 @@ std::vector<UniformInfo> Manager::enumerateUniformNames(const std::string& effec
 			{
 				bool value = false;
 				getUniformValue(uniform, &value, 1);
-				uint8_t boolAsUint8 = static_cast<uint8_t>(value);
-				uniformInfo.setBoolValues(&boolAsUint8);
+				uniformInfo.setBoolValues(static_cast<uint8_t>(value));
 			}
 			break;
 			default:

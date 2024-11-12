@@ -16,8 +16,9 @@ struct UniformInfo
 	int tempIntValues[4] = { 0 };
 	unsigned int tempUIntValues[4] = { 0 };
 
-	void setBoolValues(std::uint8_t* value) {
-		boolValue = *value;
+	void setBoolValues(std::uint8_t value) 
+	{
+		boolValue = value;
 	}
 
 	void setIntValues(int* values, size_t count) {

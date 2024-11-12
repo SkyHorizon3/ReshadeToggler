@@ -172,18 +172,24 @@ void Menu::SpawnMenuSettings(ImGuiID dockspace_id)
 
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
-				if (CreateCombo(effectComboId.c_str(), currentEffectName, m_effects, ImGuiComboFlags_None)) { valueChanged = true; }
+				if (CreateCombo(effectComboId.c_str(), currentEffectName, m_effects, ImGuiComboFlags_None))
+				{
+					valueChanged = true;
+				}
 				ImGui::TableNextColumn();
-				if (ImGui::Checkbox(effectStateId.c_str(), &currentEffectState)) { valueChanged = true; }
+				if (ImGui::Checkbox(effectStateId.c_str(), &currentEffectState))
+				{
+					valueChanged = true;
+				}
 				ImGui::TableNextColumn();
 				if (ImGui::Button(removeId.c_str()))
 				{
+					// Remove effect
 					updatedInfoList[menuName].erase(
 						std::remove_if(updatedInfoList[menuName].begin(), updatedInfoList[menuName].end(),
-						[&info](const MenuToggleInformation& timeInfo) {
-							return timeInfo.effectName == info.effectName;
-						}
-					),
+							[&info](const MenuToggleInformation& timeInfo) {
+								return timeInfo.effectName == info.effectName;
+							}),
 						updatedInfoList[menuName].end()
 					);
 
@@ -215,24 +221,29 @@ void Menu::SpawnMenuSettings(ImGuiID dockspace_id)
 
 				if (editingEffectIndex == globalIndex)
 				{
-					static std::vector<UniformInfo> uniformInfos;
-					EditValues(currentEditingEffect, uniformInfos);
-					if (!uniformInfos.empty())
+					static std::vector<UniformInfo> m_MenuUniformInfos;
+					EditValues(currentEditingEffect, m_MenuUniformInfos);
+					if (!m_MenuUniformInfos.empty())
 					{
-						for (auto& uniformInfo : uniformInfos)
-						{
-							auto& uniforms = updatedInfoList[menuName][editingEffectIndex].uniforms;
+						auto& uniforms = info.uniforms;
 
+						for (auto& uniformInfo : m_MenuUniformInfos)
+						{
 							auto it = std::find_if(uniforms.begin(), uniforms.end(), [&uniformInfo](const UniformInfo& existingInfo) {
-								return existingInfo.uniformVariable == uniformInfo.uniformVariable;
+								return existingInfo.uniformVariable.handle == uniformInfo.uniformVariable.handle;
 								});
 
-							// This is probably wrong, investigate.
 							if (it == uniforms.end())
 							{
 								uniforms.emplace_back(uniformInfo);
+								SKSE::log::info("Added new uniform: {}", uniformInfo.uniformVariable.handle);
+							}
+							else
+							{
+								SKSE::log::info("Uniform already exists: {}", uniformInfo.uniformVariable.handle);
 							}
 						}
+						SKSE::log::info("Uniforms size after iteration: {}", uniforms.size());  // Track size
 					}
 
 					if (!ImGui::IsPopupOpen("Edit Effect Values"))
@@ -241,8 +252,8 @@ void Menu::SpawnMenuSettings(ImGuiID dockspace_id)
 						currentEditingEffect.clear();
 					}
 				}
-
 			}
+
 			ImGui::EndTable();
 		}
 	}
@@ -434,10 +445,10 @@ void Menu::SpawnTimeSettings(ImGuiID dockspace_id)
 				{
 					updatedInfoList[cellName].erase(
 						std::remove_if(updatedInfoList[cellName].begin(), updatedInfoList[cellName].end(),
-						[&info](const TimeToggleInformation& timeInfo) {
-							return timeInfo.effectName == info.effectName;
-						}
-					),
+							[&info](const TimeToggleInformation& timeInfo) {
+								return timeInfo.effectName == info.effectName;
+							}
+						),
 						updatedInfoList[cellName].end()
 					);
 
@@ -534,10 +545,10 @@ void Menu::SpawnInteriorSettings(ImGuiID dockspace_id)
 				{
 					updatedInfoList[cellName].erase(
 						std::remove_if(updatedInfoList[cellName].begin(), updatedInfoList[cellName].end(),
-						[&info](const InteriorToggleInformation& interiorInfo) {
-							return interiorInfo.effectName == info.effectName;
-						}
-					),
+							[&info](const InteriorToggleInformation& interiorInfo) {
+								return interiorInfo.effectName == info.effectName;
+							}
+						),
 						updatedInfoList[cellName].end()
 					);
 
@@ -639,10 +650,10 @@ void Menu::SpawnWeatherSettings(ImGuiID dockspace_id)
 				{
 					updatedInfoList[worldSpaceName].erase(
 						std::remove_if(updatedInfoList[worldSpaceName].begin(), updatedInfoList[worldSpaceName].end(),
-						[&info](const WeatherToggleInformation& weatherInfo) {
-							return weatherInfo.effectName == info.effectName && weatherInfo.weatherFlag == info.weatherFlag;
-						}
-					),
+							[&info](const WeatherToggleInformation& weatherInfo) {
+								return weatherInfo.effectName == info.effectName && weatherInfo.weatherFlag == info.weatherFlag;
+							}
+						),
 						updatedInfoList[worldSpaceName].end()
 					);
 
@@ -798,83 +809,59 @@ void Menu::EditValues(const std::string& effectName, std::vector<UniformInfo>& t
 {
 	if (ImGui::BeginPopupModal("Edit Effect Values", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		// I cooked stupid bs, but it sort of works ig. Suck my dick :)
 		ImGui::Text("Editing effect: %s", effectName.c_str());
 		ImGui::Spacing();
 		ImGui::Separator();
 		ImGui::Spacing();
 
-		// Get the list of uniforms for the effect
+		// Retrieve all uniforms for the effect
 		std::vector<UniformInfo> uniforms = Manager::GetSingleton()->enumerateUniformNames(effectName);
 
-		// Iterate through the uniforms for this effect
+		// Ensure all uniforms are in `toReturn` before UI loop
 		for (auto& uniformInfo : uniforms)
 		{
-			// Check if the uniform is already in the 'toReturn' vector to avoid resetting it
 			auto it = std::find_if(toReturn.begin(), toReturn.end(), [&uniformInfo](const UniformInfo& existingInfo) {
 				return existingInfo.uniformVariable == uniformInfo.uniformVariable;
 				});
 
-			std::string type = Manager::GetSingleton()->getUniformTypeString(uniformInfo.uniformVariable);
-
-			// If the uniform is not found in the vector, we need to fetch it and store its value
 			if (it == toReturn.end())
 			{
+				// Prefetch the value only once when adding
+				std::string type = Manager::GetSingleton()->getUniformTypeString(uniformInfo.uniformVariable);
 
-				// Fetch and store values if not already prefetched
 				if (!uniformInfo.prefetched)
 				{
 					if (type.find("bool") != std::string::npos)
 					{
 						bool value = false;
 						Manager::GetSingleton()->getUniformValue<bool>(uniformInfo.uniformVariable, &value, 1);
-						uniformInfo.tempBoolValue = value;  // Store the value temporarily
+						uniformInfo.tempBoolValue = value;  // Store the fetched value
 					}
-
-					// Mark it as prefetched
 					uniformInfo.prefetched = true;
 				}
 
-				// Now, add the uniform to the return vector
 				toReturn.emplace_back(uniformInfo);
 			}
-			else
-			{
-				// If it's already in the vector, use the stored data
-				uniformInfo = *it;  // Replace the value with the one in toReturn
-			}
+		}
 
-			// I don't think we update the vector, should investigate
+		// Iterate through `toReturn` to handle UI interaction
+		for (auto& uniformInfo : toReturn)
+		{
+			std::string type = Manager::GetSingleton()->getUniformTypeString(uniformInfo.uniformVariable);
+
 			if (uniformInfo.prefetched)
 			{
 				if (type.find("bool") != std::string::npos)
 				{
 					if (ImGui::Checkbox(uniformInfo.uniformName.c_str(), &uniformInfo.tempBoolValue))
 					{
-						// Modify the value directly here
-						uint8_t boolAsUint8 = static_cast<uint8_t>(uniformInfo.tempBoolValue);
-						uniformInfo.setBoolValues(&boolAsUint8);
+						uniformInfo.setBoolValues(static_cast<uint8_t>(uniformInfo.tempBoolValue));
 					}
 				}
 			}
-
-			// Update the uniform in 'toReturn' vector
-			// Replace the existing entry if it's already present
-			auto it2 = std::find_if(toReturn.begin(), toReturn.end(), [&uniformInfo](const UniformInfo& existingInfo) {
-				return existingInfo.uniformVariable == uniformInfo.uniformVariable;
-				});
-
-			if (it2 != toReturn.end())
-			{
-				*it2 = uniformInfo;  // Update the existing entry with modified data
-			}
-			else
-			{
-				toReturn.emplace_back(uniformInfo);  // This case shouldn't be hit since we already checked above
-			}
 		}
 
-		// Button to close the popup
+		// Close button
 		if (ImGui::Button("Close"))
 		{
 			ImGui::CloseCurrentPopup();
@@ -883,6 +870,7 @@ void Menu::EditValues(const std::string& effectName, std::vector<UniformInfo>& t
 		ImGui::EndPopup();
 	}
 }
+
 
 
 
