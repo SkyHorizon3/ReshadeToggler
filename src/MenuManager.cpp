@@ -74,6 +74,13 @@ bool MenuManager::CreateTreeNode(const char* label, std::vector<std::string>& se
 	return itemsChanged;
 }
 
+// https://github.com/doodlum/skyrim-community-shaders/blob/09ea7f0dcb10da3fae6f56d0c1a119a501c61ca7/src/Utils/UI.cpp#L42
+ImVec2 MenuManager::GetNativeViewportSizeScaled(float scale)
+{
+	const auto Size = ImGui::GetWindowSize();
+	return { Size.x * scale, Size.y * scale };
+}
+
 #pragma region Colors
 void MenuManager::SetColors()
 {

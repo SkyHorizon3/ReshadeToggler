@@ -5,22 +5,19 @@ struct UniformInfo
 {
 	std::string uniformName;
 	reshade::api::effect_uniform_variable uniformVariable;
-	std::vector<uint8_t> boolValues;
+	std::uint8_t boolValue; // not multi-dimensional
 	std::vector<int> intValues;
 	std::vector<float> floatValues;
 	std::vector<unsigned int> uintValues;
 
 	bool prefetched = false;
-	bool tempBoolValue = false;  
-	float tempFloatValues[4] = { 0.0f };  
-	int tempIntValues[4] = { 0 };  
+	bool tempBoolValue = false;
+	float tempFloatValues[4] = { 0.0f };
+	int tempIntValues[4] = { 0 };
 	unsigned int tempUIntValues[4] = { 0 };
 
-	void setBoolValues(uint8_t* values, size_t count) {
-		if (count > boolValues.size()) {
-			boolValues.resize(count);
-		}
-		std::copy(values, values + count, boolValues.begin());
+	void setBoolValues(std::uint8_t* value) {
+		boolValue = *value;
 	}
 
 	void setIntValues(int* values, size_t count) {
@@ -102,7 +99,7 @@ public:
 	std::vector<std::string> enumerateInteriorCells() const;
 	std::vector<UniformInfo> enumerateUniformNames(const std::string& effectName);
 
-	std::string getUniformType(const reshade::api::effect_uniform_variable& uniformVariable);
+	std::string getUniformTypeString(const reshade::api::effect_uniform_variable& uniformVariable);
 
 	void toggleEffectMenu(const std::unordered_set<std::string>& openMenus);
 

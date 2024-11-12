@@ -34,6 +34,8 @@ public:
 	bool CreateCombo(const char* label, std::string& currentItem, std::vector<std::string>& items, ImGuiComboFlags_ flags);
 	bool CreateTreeNode(const char* label, std::vector<std::string>& selectedItems, std::vector<std::string>& items);
 
+	ImVec2 GetNativeViewportSizeScaled(float scale);
+
 	void SetColors();
 	void RemoveColors();
 };

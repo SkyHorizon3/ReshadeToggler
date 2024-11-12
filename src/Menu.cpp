@@ -10,7 +10,7 @@ void Menu::SettingsMenu()
 	if (m_openSettingsMenu)
 	{
 		// TODO: ensure that we are only putting the colors onto our own window and its subwindows
-		// SetColors();
+		//SetColors();
 
 		// Create the main settings window with docking enabled
 		ImGui::Begin("[PH] Settings Window", &m_openSettingsMenu);
@@ -58,7 +58,7 @@ void Menu::SettingsMenu()
 		case 4: SpawnWeatherSettings(dockspaceId); break;
 		}
 
-		// RemoveColors();
+		//RemoveColors();
 	}
 }
 
@@ -266,6 +266,8 @@ void Menu::AddNewMenu(std::map<std::string, std::vector<MenuToggleInformation>>&
 	static std::vector<std::string> currentMenus;
 	static std::vector<std::string> currentEffects;
 	static bool toggled = false;
+
+	//ImGui::SetNextWindowSize(GetNativeViewportSizeScaled(0.8f), ImGuiCond_FirstUseEver);
 
 	if (ImGui::BeginPopupModal("Create Menu Entries", NULL, ImGuiWindowFlags_NoResize))
 	{
@@ -813,7 +815,7 @@ void Menu::EditValues(const std::string& effectName, std::vector<UniformInfo>& t
 				return existingInfo.uniformVariable == uniformInfo.uniformVariable;
 				});
 
-			std::string type = Manager::GetSingleton()->getUniformType(uniformInfo.uniformVariable);
+			std::string type = Manager::GetSingleton()->getUniformTypeString(uniformInfo.uniformVariable);
 
 			// If the uniform is not found in the vector, we need to fetch it and store its value
 			if (it == toReturn.end())
@@ -851,7 +853,7 @@ void Menu::EditValues(const std::string& effectName, std::vector<UniformInfo>& t
 					{
 						// Modify the value directly here
 						uint8_t boolAsUint8 = static_cast<uint8_t>(uniformInfo.tempBoolValue);
-						uniformInfo.setBoolValues(&boolAsUint8, 1);
+						uniformInfo.setBoolValues(&boolAsUint8);
 					}
 				}
 			}

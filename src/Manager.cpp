@@ -102,7 +102,7 @@ std::vector<std::string> Manager::enumerateEffects() const
 
 	s_pRuntime->enumerate_techniques(nullptr, [&](reshade::api::effect_runtime* runtime, reshade::api::effect_technique technique)
 		{
-			char nameBuffer[64];
+			char nameBuffer[128] = "";
 
 			runtime->get_technique_effect_name(technique, nameBuffer);
 
@@ -125,7 +125,7 @@ std::vector<std::string> Manager::enumerateActiveEffects() const
 		{
 			if (runtime->get_technique_state(technique))
 			{
-				char nameBuffer[64];
+				char nameBuffer[128] = "";
 
 				runtime->get_technique_effect_name(technique, nameBuffer);
 
@@ -249,9 +249,15 @@ void Manager::setUniformValues(UniformInfo& uniform)
 	{
 		manager->setUniformValue<unsigned int>(uniform.uniformVariable, uniform.uintValues.data(), uniform.uintValues.size());
 	}
-	else if (!uniform.boolValues.empty())
+	else if (uniform.boolValue == 0 || uniform.boolValue == 1)
 	{
-		manager->setUniformValue<bool>(uniform.uniformVariable, reinterpret_cast<bool*>(uniform.boolValues.data()), 1);
+		if (reinterpret_cast<bool*>(uniform.boolValue))
+			SKSE::log::info("Casting to bool is true - Name: {}", uniform.uniformName);
+
+		if (!reinterpret_cast<bool*>(uniform.boolValue))
+			SKSE::log::info("Casting to bool is false - Name: {}", uniform.uniformName);
+
+		manager->setUniformValue<bool>(uniform.uniformVariable, reinterpret_cast<bool*>(uniform.boolValue), 1);
 	}
 }
 
@@ -512,7 +518,7 @@ struct glz::meta<UniformInfo>
 	using T = UniformInfo;
 	static constexpr auto value = object(
 		"UniformName", &T::uniformName,
-		"BoolValue", &T::boolValues,
+		"BoolValue", &T::boolValue,
 		"IntValues", &T::intValues,
 		"FloatValues", &T::floatValues,
 		"UIntValues", &T::uintValues
@@ -688,7 +694,6 @@ bool Manager::deserializeArbitraryData(const std::string& buf, Args&... args)
 	return success;
 }
 
-
 template <typename T>
 void Manager::setUniformValue(const reshade::api::effect_uniform_variable& uniformVariable, T* value, size_t count)
 {
@@ -763,44 +768,52 @@ std::vector<UniformInfo> Manager::enumerateUniformNames(const std::string& effec
 
 	s_pRuntime->enumerate_uniform_variables(effectName.c_str(), [&](reshade::api::effect_runtime* runtime, reshade::api::effect_uniform_variable uniform)
 		{
-			char name[256];
-			size_t nameSize = sizeof(name);
-			runtime->get_uniform_variable_name(uniform, name, &nameSize);
+			using format = reshade::api::format;
 
-			// Create a UniformInfo object
+			char name[128] = "";
+			runtime->get_uniform_variable_name(uniform, name);
+
 			UniformInfo uniformInfo(name, uniform);
 
-			// Fetch the type of the uniform
-			std::string type = getUniformType(uniform);
+			format baseType = format::unknown;
+			runtime->get_uniform_variable_type(uniform, &baseType);
 
-			// Retrieve the current value based on the type
-			if (type.find("bool") != std::string::npos)
+			switch (baseType)
 			{
-				bool value = false;
-				getUniformValue(uniform, &value, 1);
-				uint8_t boolAsUint8 = static_cast<uint8_t>(value);
-				uniformInfo.setBoolValues(&boolAsUint8, 1);
-			}
-			else if (type.find("float") != std::string::npos)
+			case format::r32_float:
 			{
 				float values[4] = { 0.0f };
 				int numElements = std::min(4, getUniformDimension(uniform));
 				getUniformValue(uniform, values, numElements);
 				uniformInfo.setFloatValues(values, numElements);
 			}
-			else if (type.find("int") != std::string::npos)
+			break;
+			case format::r32_sint:
 			{
 				int values[4] = { 0 };
 				int numElements = std::min(4, getUniformDimension(uniform));
 				getUniformValue(uniform, values, numElements);
 				uniformInfo.setIntValues(values, numElements);
 			}
-			else if (type.find("unsigned int") != std::string::npos)
+			break;
+			case format::r32_uint:
 			{
 				unsigned int values[4] = { 0 };
 				int numElements = std::min(4, getUniformDimension(uniform));
 				getUniformValue(uniform, values, numElements);
 				uniformInfo.setUIntValues(values, numElements);
+			}
+			break;
+			case format::r32_typeless:
+			{
+				bool value = false;
+				getUniformValue(uniform, &value, 1);
+				uint8_t boolAsUint8 = static_cast<uint8_t>(value);
+				uniformInfo.setBoolValues(&boolAsUint8);
+			}
+			break;
+			default:
+				break;
 			}
 
 			uniforms.emplace_back(std::move(uniformInfo));
@@ -809,21 +822,15 @@ std::vector<UniformInfo> Manager::enumerateUniformNames(const std::string& effec
 	return uniforms;
 }
 
-std::string Manager::getUniformType(const reshade::api::effect_uniform_variable& uniformVariable)
+std::string Manager::getUniformTypeString(const reshade::api::effect_uniform_variable& uniformVariable)
 {
 	using format = reshade::api::format;
-	reshade::api::format baseType;
-	uint32_t rows = 0, columns = 0, arrayLength = 0;
+	format baseType = format::unknown;
+	std::uint32_t rows = 0, columns = 0, arrayLength = 0;
 
-	// Call the API function to get the type information
 	s_pRuntime->get_uniform_variable_type(uniformVariable, &baseType, &rows, &columns, &arrayLength);
 
-	char name[256];
-	size_t nameSize = sizeof(name);
-	s_pRuntime->get_uniform_variable_name(uniformVariable, name, &nameSize);
-	std::string typeName;
-
-	std::string varName = name;
+	std::string typeName{};
 
 	switch (baseType)
 	{
@@ -842,12 +849,6 @@ std::string Manager::getUniformType(const reshade::api::effect_uniform_variable&
 	default:
 		typeName = "unknown";
 		break;
-	}
-
-	// Heuristic: Check if the name follows a boolean convention
-	if (varName.find("is") == 0 || varName.find("use") == 0 || varName.find("enable") == 0)
-	{
-		typeName = "bool";
 	}
 
 	// Append dimensions if applicable
