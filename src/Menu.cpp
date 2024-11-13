@@ -187,9 +187,9 @@ void Menu::SpawnMenuSettings(ImGuiID dockspace_id)
 					// Remove effect
 					updatedInfoList[menuName].erase(
 						std::remove_if(updatedInfoList[menuName].begin(), updatedInfoList[menuName].end(),
-							[&info](const MenuToggleInformation& timeInfo) {
-								return timeInfo.effectName == info.effectName;
-							}),
+						[&info](const MenuToggleInformation& timeInfo) {
+							return timeInfo.effectName == info.effectName;
+						}),
 						updatedInfoList[menuName].end()
 					);
 
@@ -221,37 +221,29 @@ void Menu::SpawnMenuSettings(ImGuiID dockspace_id)
 
 				if (editingEffectIndex == globalIndex)
 				{
-					static std::vector<UniformInfo> m_MenuUniformInfos;
-					EditValues(currentEditingEffect, m_MenuUniformInfos);
-					if (!m_MenuUniformInfos.empty())
+					static std::vector<UniformInfo> menuUniformInfos;
+					EditValues(currentEditingEffect, menuUniformInfos);
+
+					auto& targetUniforms = updatedInfoList[menuName].at(i).uniforms;
+					SKSE::log::info("Before updating, uniforms size: {}", targetUniforms.size());
+
+					targetUniforms.clear();
+
+					if (!menuUniformInfos.empty())
 					{
-						auto& uniforms = info.uniforms;
-
-						for (auto& uniformInfo : m_MenuUniformInfos)
-						{
-							auto it = std::find_if(uniforms.begin(), uniforms.end(), [&uniformInfo](const UniformInfo& existingInfo) {
-								return existingInfo.uniformVariable.handle == uniformInfo.uniformVariable.handle;
-								});
-
-							if (it == uniforms.end())
-							{
-								uniforms.emplace_back(uniformInfo);
-								SKSE::log::info("Added new uniform: {}", uniformInfo.uniformVariable.handle);
-							}
-							else
-							{
-								SKSE::log::info("Uniform already exists: {}", uniformInfo.uniformVariable.handle);
-							}
-						}
-						SKSE::log::info("Uniforms size after iteration: {}", uniforms.size());  // Track size
+						targetUniforms = menuUniformInfos;
+						SKSE::log::info("After updating, uniforms size: {}", targetUniforms.size());
 					}
 
 					if (!ImGui::IsPopupOpen("Edit Effect Values"))
 					{
 						editingEffectIndex = -1;
 						currentEditingEffect.clear();
+						menuUniformInfos.clear();
 					}
 				}
+
+
 			}
 
 			ImGui::EndTable();
@@ -445,10 +437,10 @@ void Menu::SpawnTimeSettings(ImGuiID dockspace_id)
 				{
 					updatedInfoList[cellName].erase(
 						std::remove_if(updatedInfoList[cellName].begin(), updatedInfoList[cellName].end(),
-							[&info](const TimeToggleInformation& timeInfo) {
-								return timeInfo.effectName == info.effectName;
-							}
-						),
+						[&info](const TimeToggleInformation& timeInfo) {
+							return timeInfo.effectName == info.effectName;
+						}
+					),
 						updatedInfoList[cellName].end()
 					);
 
@@ -545,10 +537,10 @@ void Menu::SpawnInteriorSettings(ImGuiID dockspace_id)
 				{
 					updatedInfoList[cellName].erase(
 						std::remove_if(updatedInfoList[cellName].begin(), updatedInfoList[cellName].end(),
-							[&info](const InteriorToggleInformation& interiorInfo) {
-								return interiorInfo.effectName == info.effectName;
-							}
-						),
+						[&info](const InteriorToggleInformation& interiorInfo) {
+							return interiorInfo.effectName == info.effectName;
+						}
+					),
 						updatedInfoList[cellName].end()
 					);
 
@@ -650,10 +642,10 @@ void Menu::SpawnWeatherSettings(ImGuiID dockspace_id)
 				{
 					updatedInfoList[worldSpaceName].erase(
 						std::remove_if(updatedInfoList[worldSpaceName].begin(), updatedInfoList[worldSpaceName].end(),
-							[&info](const WeatherToggleInformation& weatherInfo) {
-								return weatherInfo.effectName == info.effectName && weatherInfo.weatherFlag == info.weatherFlag;
-							}
-						),
+						[&info](const WeatherToggleInformation& weatherInfo) {
+							return weatherInfo.effectName == info.effectName && weatherInfo.weatherFlag == info.weatherFlag;
+						}
+					),
 						updatedInfoList[worldSpaceName].end()
 					);
 

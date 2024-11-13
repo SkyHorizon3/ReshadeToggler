@@ -16,26 +16,26 @@ struct UniformInfo
 	int tempIntValues[4] = { 0 };
 	unsigned int tempUIntValues[4] = { 0 };
 
-	void setBoolValues(std::uint8_t value) 
+	void setBoolValues(const std::uint8_t& value)
 	{
 		boolValue = value;
 	}
 
-	void setIntValues(int* values, size_t count) {
+	void setIntValues(int* values, const size_t& count) {
 		if (count > intValues.size()) {
 			intValues.resize(count);
 		}
 		std::copy(values, values + count, intValues.begin());
 	}
 
-	void setFloatValues(float* values, size_t count) {
+	void setFloatValues(float* values, const size_t& count) {
 		if (count > floatValues.size()) {
 			floatValues.resize(count);
 		}
 		std::copy(values, values + count, floatValues.begin());
 	}
 
-	void setUIntValues(unsigned int* values, size_t count) {
+	void setUIntValues(unsigned int* values, const size_t& count) {
 		if (count > uintValues.size()) {
 			uintValues.resize(count);
 		}
