@@ -516,7 +516,8 @@ struct glz::meta<UniformInfo>
 		"BoolValue", &T::boolValue,
 		"IntValues", &T::intValues,
 		"FloatValues", &T::floatValues,
-		"UIntValues", &T::uintValues
+		"UIntValues", &T::uintValues,
+		"Prefetched", &T::prefetched
 	);
 };
 

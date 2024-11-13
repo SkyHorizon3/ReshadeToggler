@@ -231,7 +231,14 @@ void Menu::SpawnMenuSettings(ImGuiID dockspace_id)
 
 					if (!menuUniformInfos.empty())
 					{
-						targetUniforms = menuUniformInfos;
+						for (auto& uniformInfo : menuUniformInfos)
+						{
+							uniformInfo.prefetched = true;
+						}
+
+						targetUniforms = std::move(menuUniformInfos);
+
+
 						SKSE::log::info("After updating, uniforms size: {}", targetUniforms.size());
 					}
 
