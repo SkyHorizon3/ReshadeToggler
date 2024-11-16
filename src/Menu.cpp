@@ -222,24 +222,19 @@ void Menu::SpawnMenuSettings(ImGuiID dockspace_id)
 				if (editingEffectIndex == globalIndex)
 				{
 					static std::vector<UniformInfo> menuUniformInfos;
-					EditValues(currentEditingEffect, menuUniformInfos);
 
 					auto& targetUniforms = updatedInfoList[menuName].at(i).uniforms;
-					SKSE::log::info("Before updating, uniforms size: {}", targetUniforms.size());
+					SKSE::log::debug("Before updating, uniforms size: {}", targetUniforms.size());
 
-					targetUniforms.clear();
+					menuUniformInfos = std::move(targetUniforms);
+
+					EditValues(currentEditingEffect, menuUniformInfos);
 
 					if (!menuUniformInfos.empty())
 					{
-						for (auto& uniformInfo : menuUniformInfos)
-						{
-							uniformInfo.prefetched = true;
-						}
-
 						targetUniforms = std::move(menuUniformInfos);
 
-
-						SKSE::log::info("After updating, uniforms size: {}", targetUniforms.size());
+						SKSE::log::debug("After updating, uniforms size: {}", targetUniforms.size());
 					}
 
 					if (!ImGui::IsPopupOpen("Edit Effect Values"))
@@ -816,11 +811,20 @@ void Menu::EditValues(const std::string& effectName, std::vector<UniformInfo>& t
 		// Retrieve all uniforms for the effect
 		std::vector<UniformInfo> uniforms = Manager::GetSingleton()->enumerateUniformNames(effectName);
 
+		for (auto& var : toReturn)
+		{
+			if (var.uniformVariable.handle == 0) // if 0 it's loaded from a preset
+			{
+				var.uniformVariable = s_pRuntime->find_uniform_variable(effectName.c_str(), var.uniformName.c_str());
+				var.tempBoolValue = static_cast<bool>(var.boolValue);
+			}
+		}
+
 		// Ensure all uniforms are in `toReturn` before UI loop
 		for (auto& uniformInfo : uniforms)
 		{
 			auto it = std::find_if(toReturn.begin(), toReturn.end(), [&uniformInfo](const UniformInfo& existingInfo) {
-				return existingInfo.uniformVariable == uniformInfo.uniformVariable;
+				return existingInfo.uniformName == uniformInfo.uniformName;
 				});
 
 			if (it == toReturn.end())
