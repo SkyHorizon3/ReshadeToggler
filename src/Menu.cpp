@@ -13,9 +13,9 @@ void Menu::SettingsMenu()
 		//SetColors();
 
 		// Create the main settings window with docking enabled
+		ImGui::SetNextWindowSize(GetNativeViewportSizeScaled(0.6f), ImGuiCond_FirstUseEver);
 		ImGui::Begin("[PH] Settings Window", &m_openSettingsMenu);
 		static int currentTab = 0;
-
 
 		if (ImGui::BeginTabBar("SettingsTabBar"))
 		{
@@ -224,7 +224,7 @@ void Menu::SpawnMenuSettings(ImGuiID dockspace_id)
 					static std::vector<UniformInfo> menuUniformInfos;
 
 					auto& targetUniforms = updatedInfoList[menuName].at(i).uniforms;
-					SKSE::log::debug("Before updating, uniforms size: {}", targetUniforms.size());
+					//SKSE::log::debug("Before updating, uniforms size: {}", targetUniforms.size());
 
 					menuUniformInfos = std::move(targetUniforms);
 
@@ -233,8 +233,7 @@ void Menu::SpawnMenuSettings(ImGuiID dockspace_id)
 					if (!menuUniformInfos.empty())
 					{
 						targetUniforms = std::move(menuUniformInfos);
-
-						SKSE::log::debug("After updating, uniforms size: {}", targetUniforms.size());
+						//SKSE::log::debug("After updating, uniforms size: {}", targetUniforms.size());
 					}
 
 					if (!ImGui::IsPopupOpen("Edit Effect Values"))
@@ -272,9 +271,7 @@ void Menu::AddNewMenu(std::map<std::string, std::vector<MenuToggleInformation>>&
 	static std::vector<std::string> currentEffects;
 	static bool toggled = false;
 
-	//ImGui::SetNextWindowSize(GetNativeViewportSizeScaled(0.8f), ImGuiCond_FirstUseEver);
-
-	if (ImGui::BeginPopupModal("Create Menu Entries", NULL, ImGuiWindowFlags_NoResize))
+	if (ImGui::BeginPopupModal("Create Menu Entries", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		// Reset static variables for each popup
 		if (ImGui::IsWindowAppearing())
@@ -284,14 +281,14 @@ void Menu::AddNewMenu(std::map<std::string, std::vector<MenuToggleInformation>>&
 			toggled = false;
 		}
 
+		ImGui::Checkbox("Toggled On", &toggled);
+
 		ImGui::Text("Select Menus");
 		CreateTreeNode("Menus", currentMenus, m_menuNames);
 		ImGui::Separator();
 
 		ImGui::Text("Select Effects");
 		CreateTreeNode("Effects", currentEffects, m_effects);
-		ImGui::SameLine();
-		ImGui::Checkbox("Toggled On", &toggled);
 
 		ImGui::Separator();
 		if (ImGui::Button("Finish"))
@@ -701,7 +698,7 @@ void Menu::AddNewTime(std::map<std::string, std::vector<TimeToggleInformation>>&
 	static char startHourStr[3] = "00", startMinuteStr[3] = "00";
 	static char stopHourStr[3] = "00", stopMinuteStr[3] = "00";
 
-	if (ImGui::BeginPopupModal("Create Time Entries", NULL, ImGuiWindowFlags_NoResize))
+	if (ImGui::BeginPopupModal("Create Time Entries", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		// Reset static variables for each popup
 		if (ImGui::IsWindowAppearing())
@@ -809,86 +806,95 @@ void Menu::EditValues(const std::string& effectName, std::vector<UniformInfo>& t
 		ImGui::Separator();
 		ImGui::Spacing();
 
+		using format = reshade::api::format;
+		const auto manager = Manager::GetSingleton();
+
 		// Retrieve all uniforms for the effect
-		std::vector<UniformInfo> uniforms = Manager::GetSingleton()->enumerateUniformNames(effectName);
+		std::vector<UniformInfo> uniforms = manager->enumerateUniformNames(effectName);
 
 		for (auto& var : toReturn)
 		{
 			if (var.uniformVariable.handle == 0) // if 0 it's loaded from a preset
 			{
 				var.uniformVariable = s_pRuntime->find_uniform_variable(effectName.c_str(), var.uniformName.c_str());
-				std::string type = Manager::GetSingleton()->getUniformTypeString(var.uniformVariable);
+				format baseType = format::unknown;
 
-				if (type.find("float") != std::string::npos)
+				s_pRuntime->get_uniform_variable_type(var.uniformVariable, &baseType);
+
+				switch (baseType)
 				{
+				case format::r32_float:
 					std::copy(var.floatValues.begin(), var.floatValues.begin() + std::min(var.floatValues.size(), size_t(4)), var.tempFloatValues);
-				}
-				else if (type.find("int") != std::string::npos)
-				{
+					break;
+				case format::r32_sint:
 					std::copy(var.intValues.begin(), var.intValues.begin() + std::min(var.intValues.size(), size_t(4)), var.tempIntValues);
-				}
-				else if (type.find("bool") != std::string::npos)
-				{
-					var.tempBoolValue = static_cast<bool>(var.boolValue);
-				}
-				else if (type.find("unsigned int") != std::string::npos)
-				{
+					break;
+				case format::r32_uint:
 					std::copy(var.uintValues.begin(), var.uintValues.begin() + std::min(var.uintValues.size(), size_t(4)), var.tempUIntValues);
+					break;
+				case format::r32_typeless:
+					var.tempBoolValue = static_cast<bool>(var.boolValue);
+					break;
+				default:
+					break;
 				}
 			}
 		}
+
+		auto FetchUniformValue = [&](UniformInfo& info) {
+
+			if (info.prefetched)
+				return;
+
+			format baseType = format::unknown;
+			s_pRuntime->get_uniform_variable_type(info.uniformVariable, &baseType);
+
+			switch (baseType)
+			{
+			case format::r32_float:
+			{
+				float values[4] = {};
+				manager->getUniformValue<float>(info.uniformVariable, values, 4);
+				std::copy(std::begin(values), std::end(values), std::begin(info.tempFloatValues));
+				break;
+			}
+			case format::r32_sint:
+			{
+				int values[4] = {};
+				manager->getUniformValue<int>(info.uniformVariable, values, 4);
+				std::copy(std::begin(values), std::end(values), std::begin(info.tempIntValues));
+				break;
+			}
+			case format::r32_uint:
+			{
+				unsigned int values[4] = {};
+				manager->getUniformValue<unsigned int>(info.uniformVariable, values, 4);
+				std::copy(std::begin(values), std::end(values), std::begin(info.tempUIntValues));
+				break;
+			}
+			case format::r32_typeless:
+			{
+				bool value = false;
+				manager->getUniformValue<bool>(info.uniformVariable, &value, 1);
+				info.tempBoolValue = value;
+				break;
+			}
+			default:
+				break;
+			}
+			info.prefetched = true;
+			};
 
 		// Ensure all uniforms are in `toReturn` before UI loop
 		for (auto& uniformInfo : uniforms)
 		{
 			auto it = std::find_if(toReturn.begin(), toReturn.end(), [&uniformInfo](const UniformInfo& existingInfo) {
-				return existingInfo.uniformName == uniformInfo.uniformName;
+				return existingInfo.uniformVariable == uniformInfo.uniformVariable;
 				});
 
 			if (it == toReturn.end())
 			{
-				// Prefetch the value only once when adding
-				std::string type = Manager::GetSingleton()->getUniformTypeString(uniformInfo.uniformVariable);
-
-				if (!uniformInfo.prefetched)
-				{
-					if (type.find("bool") != std::string::npos)
-					{
-						bool value = false;
-						Manager::GetSingleton()->getUniformValue<bool>(uniformInfo.uniformVariable, &value, 1);
-						uniformInfo.tempBoolValue = value;  // Store the fetched value
-					}
-					else if(type.find("float") != std::string::npos)
-					{
-						float value[4] = { 0.0f };
-						Manager::GetSingleton()->getUniformValue<float>(uniformInfo.uniformVariable, value, 4);
-						uniformInfo.tempFloatValues[0] = value[0];
-						uniformInfo.tempFloatValues[1] = value[1];
-						uniformInfo.tempFloatValues[2] = value[2];
-						uniformInfo.tempFloatValues[3] = value[3];
-					}
-					else if (type.find("int") != std::string::npos)
-					{
-						int value[4] = { 0 };
-						Manager::GetSingleton()->getUniformValue<int>(uniformInfo.uniformVariable, value, 4);
-						uniformInfo.tempIntValues[0] = value[0];
-						uniformInfo.tempIntValues[1] = value[1];
-						uniformInfo.tempIntValues[2] = value[2];
-						uniformInfo.tempIntValues[3] = value[3];
-					}
-					else if (type.find("unsigned int") != std::string::npos)
-					{
-						unsigned int value[4] = { 0 };
-						Manager::GetSingleton()->getUniformValue<unsigned int>(uniformInfo.uniformVariable, value, 4);
-						uniformInfo.tempUIntValues[0] = value[0];
-						uniformInfo.tempUIntValues[1] = value[1];
-						uniformInfo.tempUIntValues[2] = value[2];
-						uniformInfo.tempUIntValues[3] = value[3];
-					}
-
-					uniformInfo.prefetched = true;
-				}
-
+				FetchUniformValue(uniformInfo);
 				toReturn.emplace_back(uniformInfo);
 			}
 		}
@@ -896,20 +902,16 @@ void Menu::EditValues(const std::string& effectName, std::vector<UniformInfo>& t
 		// Iterate through `toReturn` to handle UI interaction
 		for (auto& uniformInfo : toReturn)
 		{
-			std::string type = Manager::GetSingleton()->getUniformTypeString(uniformInfo.uniformVariable);
+			format baseType = format::unknown;
+			s_pRuntime->get_uniform_variable_type(uniformInfo.uniformVariable, &baseType);
 
 			if (uniformInfo.prefetched)
 			{
-				if (type.find("bool") != std::string::npos)
+				switch (baseType)
 				{
-					if (ImGui::Checkbox(uniformInfo.uniformName.c_str(), &uniformInfo.tempBoolValue))
-					{
-						uniformInfo.setBoolValues(static_cast<uint8_t>(uniformInfo.tempBoolValue));
-					}
-				}
-				else if (type.find("float") != std::string::npos)
+				case format::r32_float:
 				{
-					int numElements = std::min(4, Manager::GetSingleton()->getUniformDimension(uniformInfo.uniformVariable));
+					int numElements = std::min(4, manager->getUniformDimension(uniformInfo.uniformVariable));
 
 					switch (numElements)
 					{
@@ -939,9 +941,10 @@ void Menu::EditValues(const std::string& effectName, std::vector<UniformInfo>& t
 						break;
 					}
 				}
-				else if (type.find("int") != std::string::npos)
+				break;
+				case format::r32_sint:
 				{
-					int numElements = std::min(4, Manager::GetSingleton()->getUniformDimension(uniformInfo.uniformVariable));
+					int numElements = std::min(4, manager->getUniformDimension(uniformInfo.uniformVariable));
 
 					switch (numElements)
 					{
@@ -972,9 +975,10 @@ void Menu::EditValues(const std::string& effectName, std::vector<UniformInfo>& t
 
 					}
 				}
-				else if (type.find("unsigned int") != std::string::npos)
+				break;
+				case format::r32_uint:
 				{
-					int numElements = std::min(4, Manager::GetSingleton()->getUniformDimension(uniformInfo.uniformVariable));
+					int numElements = std::min(4, manager->getUniformDimension(uniformInfo.uniformVariable));
 
 					switch (numElements)
 					{
@@ -1004,6 +1008,19 @@ void Menu::EditValues(const std::string& effectName, std::vector<UniformInfo>& t
 						break;
 					}
 				}
+				break;
+				case format::r32_typeless:
+				{
+					if (ImGui::Checkbox(uniformInfo.uniformName.c_str(), &uniformInfo.tempBoolValue))
+					{
+						uniformInfo.setBoolValues(static_cast<uint8_t>(uniformInfo.tempBoolValue));
+					}
+				}
+				break;
+				default:
+					break;
+				}
+
 				ImGui::Spacing();
 				ImGui::Separator();
 				ImGui::Spacing();
@@ -1027,7 +1044,7 @@ void Menu::AddNewInterior(std::map<std::string, std::vector<InteriorToggleInform
 	static std::vector<std::string> currentEffects;
 	static bool toggled = false;
 
-	if (ImGui::BeginPopupModal("Create Interior Entries", NULL, ImGuiWindowFlags_NoResize))
+	if (ImGui::BeginPopupModal("Create Interior Entries", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		// Reset static variables for each popup
 		if (ImGui::IsWindowAppearing())
@@ -1079,7 +1096,7 @@ void Menu::AddNewWeather(std::map<std::string, std::vector<WeatherToggleInformat
 	static std::vector<std::string> currentWeatherFlags;
 	static bool toggled = false;
 
-	if (ImGui::BeginPopupModal("Create Weather Entries", NULL, ImGuiWindowFlags_NoResize))
+	if (ImGui::BeginPopupModal("Create Weather Entries", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		// Reset static variables for each popup
 		if (ImGui::IsWindowAppearing())

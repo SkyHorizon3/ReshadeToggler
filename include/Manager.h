@@ -100,8 +100,6 @@ public:
 	std::vector<std::string> enumerateInteriorCells() const;
 	std::vector<UniformInfo> enumerateUniformNames(const std::string& effectName);
 
-	std::string getUniformTypeString(const reshade::api::effect_uniform_variable& uniformVariable);
-
 	void toggleEffectMenu(const std::unordered_set<std::string>& openMenus);
 
 	void toggleEffectWeather();

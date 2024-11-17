@@ -817,48 +817,6 @@ std::vector<UniformInfo> Manager::enumerateUniformNames(const std::string& effec
 	return uniforms;
 }
 
-std::string Manager::getUniformTypeString(const reshade::api::effect_uniform_variable& uniformVariable)
-{
-	using format = reshade::api::format;
-	format baseType = format::unknown;
-	std::uint32_t rows = 0, columns = 0, arrayLength = 0;
-
-	s_pRuntime->get_uniform_variable_type(uniformVariable, &baseType, &rows, &columns, &arrayLength);
-
-	std::string typeName{};
-
-	switch (baseType)
-	{
-	case format::r32_float:
-		typeName = "float";
-		break;
-	case format::r32_sint:
-		typeName = "int";
-		break;
-	case format::r32_uint:
-		typeName = "unsigned int";
-		break;
-	case format::r32_typeless:
-		typeName = "bool";
-		break;
-	default:
-		typeName = "unknown";
-		break;
-	}
-
-	// Append dimensions if applicable
-	if (rows > 0 && columns > 0)
-	{
-		typeName += " (" + std::to_string(rows) + "x" + std::to_string(columns) + ")";
-	}
-	else if (arrayLength > 0)
-	{
-		typeName += " [Array of " + std::to_string(arrayLength) + "]";
-	}
-
-	return typeName;
-}
-
 int Manager::getUniformDimension(const reshade::api::effect_uniform_variable& uniformVariable) const
 {
 
