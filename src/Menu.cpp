@@ -801,6 +801,7 @@ void Menu::ClampInputValue(char* inputStr, int maxVal)
 
 void Menu::EditValues(const std::string& effectName, std::vector<UniformInfo>& toReturn)
 {
+	ImGui::GetIO().ConfigDragClickToInputText = true;
 	if (ImGui::BeginPopupModal("Edit Effect Values", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		ImGui::Text("Editing effect: %s", effectName.c_str());
@@ -816,7 +817,24 @@ void Menu::EditValues(const std::string& effectName, std::vector<UniformInfo>& t
 			if (var.uniformVariable.handle == 0) // if 0 it's loaded from a preset
 			{
 				var.uniformVariable = s_pRuntime->find_uniform_variable(effectName.c_str(), var.uniformName.c_str());
-				var.tempBoolValue = static_cast<bool>(var.boolValue);
+				std::string type = Manager::GetSingleton()->getUniformTypeString(var.uniformVariable);
+
+				if (type.find("float") != std::string::npos)
+				{
+					std::copy(var.floatValues.begin(), var.floatValues.begin() + std::min(var.floatValues.size(), size_t(4)), var.tempFloatValues);
+				}
+				else if (type.find("int") != std::string::npos)
+				{
+					std::copy(var.intValues.begin(), var.intValues.begin() + std::min(var.intValues.size(), size_t(4)), var.tempIntValues);
+				}
+				else if (type.find("bool") != std::string::npos)
+				{
+					var.tempBoolValue = static_cast<bool>(var.boolValue);
+				}
+				else if (type.find("unsigned int") != std::string::npos)
+				{
+					std::copy(var.uintValues.begin(), var.uintValues.begin() + std::min(var.uintValues.size(), size_t(4)), var.tempUIntValues);
+				}
 			}
 		}
 
@@ -840,6 +858,34 @@ void Menu::EditValues(const std::string& effectName, std::vector<UniformInfo>& t
 						Manager::GetSingleton()->getUniformValue<bool>(uniformInfo.uniformVariable, &value, 1);
 						uniformInfo.tempBoolValue = value;  // Store the fetched value
 					}
+					else if(type.find("float") != std::string::npos)
+					{
+						float value[4] = { 0.0f };
+						Manager::GetSingleton()->getUniformValue<float>(uniformInfo.uniformVariable, value, 4);
+						uniformInfo.tempFloatValues[0] = value[0];
+						uniformInfo.tempFloatValues[1] = value[1];
+						uniformInfo.tempFloatValues[2] = value[2];
+						uniformInfo.tempFloatValues[3] = value[3];
+					}
+					else if (type.find("int") != std::string::npos)
+					{
+						int value[4] = { 0 };
+						Manager::GetSingleton()->getUniformValue<int>(uniformInfo.uniformVariable, value, 4);
+						uniformInfo.tempIntValues[0] = value[0];
+						uniformInfo.tempIntValues[1] = value[1];
+						uniformInfo.tempIntValues[2] = value[2];
+						uniformInfo.tempIntValues[3] = value[3];
+					}
+					else if (type.find("unsigned int") != std::string::npos)
+					{
+						unsigned int value[4] = { 0 };
+						Manager::GetSingleton()->getUniformValue<unsigned int>(uniformInfo.uniformVariable, value, 4);
+						uniformInfo.tempUIntValues[0] = value[0];
+						uniformInfo.tempUIntValues[1] = value[1];
+						uniformInfo.tempUIntValues[2] = value[2];
+						uniformInfo.tempUIntValues[3] = value[3];
+					}
+
 					uniformInfo.prefetched = true;
 				}
 
@@ -861,6 +907,106 @@ void Menu::EditValues(const std::string& effectName, std::vector<UniformInfo>& t
 						uniformInfo.setBoolValues(static_cast<uint8_t>(uniformInfo.tempBoolValue));
 					}
 				}
+				else if (type.find("float") != std::string::npos)
+				{
+					int numElements = std::min(4, Manager::GetSingleton()->getUniformDimension(uniformInfo.uniformVariable));
+
+					switch (numElements)
+					{
+					case 1:
+						if (ImGui::SliderFloat(uniformInfo.uniformName.c_str(), &uniformInfo.tempFloatValues[0], -64.0f, 64.0f))
+						{
+							uniformInfo.setFloatValues(uniformInfo.tempFloatValues, 1);
+						}
+						break;
+					case 2:
+						if (ImGui::SliderFloat2(uniformInfo.uniformName.c_str(), uniformInfo.tempFloatValues, -64.0f, 64.0f))
+						{
+							uniformInfo.setFloatValues(uniformInfo.tempFloatValues, 2);
+						}
+						break;
+					case 3:
+						if (ImGui::ColorEdit3(uniformInfo.uniformName.c_str(), uniformInfo.tempFloatValues))
+						{
+							uniformInfo.setFloatValues(uniformInfo.tempFloatValues, 3);
+						}
+						break;
+					case 4:
+						if (ImGui::ColorEdit4(uniformInfo.uniformName.c_str(), uniformInfo.tempFloatValues))
+						{
+							uniformInfo.setFloatValues(uniformInfo.tempFloatValues, 4);
+						}
+						break;
+					}
+				}
+				else if (type.find("int") != std::string::npos)
+				{
+					int numElements = std::min(4, Manager::GetSingleton()->getUniformDimension(uniformInfo.uniformVariable));
+
+					switch (numElements)
+					{
+					case 1:
+						if (ImGui::SliderInt(uniformInfo.uniformName.c_str(), &uniformInfo.tempIntValues[0], -64, 64))
+						{
+							uniformInfo.setIntValues(uniformInfo.tempIntValues, 1);
+						}
+						break;
+					case 2:
+						if (ImGui::SliderInt2(uniformInfo.uniformName.c_str(), uniformInfo.tempIntValues, -64, 64))
+						{
+							uniformInfo.setIntValues(uniformInfo.tempIntValues, 2);
+							break;
+					case 3:
+						if (ImGui::SliderInt3(uniformInfo.uniformName.c_str(), uniformInfo.tempIntValues, -64, 64))
+						{
+							uniformInfo.setIntValues(uniformInfo.tempIntValues, 3);
+						}
+						break;
+					case 4:
+						if (ImGui::SliderInt4(uniformInfo.uniformName.c_str(), uniformInfo.tempIntValues, -64, 64))
+						{
+							uniformInfo.setIntValues(uniformInfo.tempIntValues, 4);
+						}
+						break;
+						}
+
+					}
+				}
+				else if (type.find("unsigned int") != std::string::npos)
+				{
+					int numElements = std::min(4, Manager::GetSingleton()->getUniformDimension(uniformInfo.uniformVariable));
+
+					switch (numElements)
+					{
+					case 1:
+						if (ImGui::SliderScalar(uniformInfo.uniformName.c_str(), ImGuiDataType_U32, &uniformInfo.tempUIntValues[0], 0, reinterpret_cast<void*>(64)))
+						{
+							uniformInfo.setUIntValues(uniformInfo.tempUIntValues, 1);
+						}
+						break;
+					case 2:
+						if (ImGui::SliderScalarN(uniformInfo.uniformName.c_str(), ImGuiDataType_U32, uniformInfo.tempUIntValues, 2, 0, reinterpret_cast<void*>(64)))
+						{
+							uniformInfo.setUIntValues(uniformInfo.tempUIntValues, 2);
+						}
+						break;
+					case 3:
+						if (ImGui::SliderScalarN(uniformInfo.uniformName.c_str(), ImGuiDataType_U32, uniformInfo.tempUIntValues, 3, 0, reinterpret_cast<void*>(64)))
+						{
+							uniformInfo.setUIntValues(uniformInfo.tempUIntValues, 3);
+						}
+						break;
+					case 4:
+						if (ImGui::SliderScalarN(uniformInfo.uniformName.c_str(), ImGuiDataType_U32, uniformInfo.tempUIntValues, 4, 0, reinterpret_cast<void*>(64)))
+						{
+							uniformInfo.setUIntValues(uniformInfo.tempUIntValues, 4);
+						}
+						break;
+					}
+				}
+				ImGui::Spacing();
+				ImGui::Separator();
+				ImGui::Spacing();
 			}
 		}
 
@@ -873,10 +1019,6 @@ void Menu::EditValues(const std::string& effectName, std::vector<UniformInfo>& t
 		ImGui::EndPopup();
 	}
 }
-
-
-
-
 
 
 void Menu::AddNewInterior(std::map<std::string, std::vector<InteriorToggleInformation>>& updatedInfoList)
