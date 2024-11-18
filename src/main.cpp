@@ -2,6 +2,7 @@
 #include "Events.h"
 #include "Manager.h"
 #include "Menu.h"
+#include <Papyrus.h>
 
 reshade::api::effect_runtime* s_pRuntime = nullptr;
 HMODULE g_hModule = nullptr;
@@ -128,6 +129,9 @@ SKSEPluginLoad(const SKSE::LoadInterface* skse)
 
 	if (!Load())
 		SKSE::stl::report_and_fail("ReShade not present!\nIf you want to use ReShade Effect Toggler, please install ReShade with full add-on support."sv);
+
+	auto papyrus = SKSE::GetPapyrusInterface();
+	papyrus->Register(Papyrus::Bind);
 
 	SKSE::GetMessagingInterface()->RegisterListener(MessageListener);
 

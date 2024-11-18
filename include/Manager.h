@@ -108,6 +108,8 @@ public:
 
 	void toggleEffectInterior(const bool isInterior);
 
+	void toggleEffect(const char* technique, bool state) const;
+
 	std::map<std::string, std::vector<MenuToggleInformation>> getMenuToggleInfo() const { return m_menuToggleInfo; }
 	void setMenuToggleInfo(const std::map<std::string, std::vector<MenuToggleInformation>>& info) { m_menuToggleInfo = info; }
 
@@ -146,8 +148,6 @@ private:
 	bool allowtoggleEffectInterior(const InteriorToggleInformation& cachedinterior, const std::map<std::string, std::vector<InteriorToggleInformation>>::iterator& it) const;
 
 	std::string constructKey(const RE::TESForm* form) const;
-
-	void toggleEffect(const char* technique, bool state) const;
 
 	std::map<std::string, std::vector<MenuToggleInformation>> m_menuToggleInfo;
 	std::map<std::string, std::vector<WeatherToggleInformation>> m_weatherToggleInfo;
