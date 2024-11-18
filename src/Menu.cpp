@@ -143,7 +143,7 @@ void Menu::SpawnMenuSettings(ImGuiID dockspace_id)
 
 	for (const auto& [menuName, effects] : infoList)
 	{
-		if (strlen(inputBuffer) > 0 && menuName.find(inputBuffer) == std::string::npos)
+		if (strlen(inputBuffer) > 0 && Utils::tolower(menuName).find(Utils::tolower(inputBuffer)) == std::string::npos)
 			continue;
 
 		headerId++;
@@ -340,7 +340,7 @@ void Menu::SpawnTimeSettings(ImGuiID dockspace_id)
 	int globalIndex = 0;
 	for (const auto& [cellName, effects] : infoList)
 	{
-		if (strlen(inputBuffer) > 0 && cellName.find(inputBuffer) == std::string::npos)
+		if (strlen(inputBuffer) > 0 && Utils::tolower(cellName).find(Utils::tolower(inputBuffer)) == std::string::npos)
 			continue;
 
 		headerId++;
@@ -504,7 +504,7 @@ void Menu::SpawnInteriorSettings(ImGuiID dockspace_id)
 	int globalIndex = 0;
 	for (const auto& [cellName, effects] : infoList)
 	{
-		if (strlen(inputBuffer) > 0 && cellName.find(inputBuffer) == std::string::npos)
+		if (strlen(inputBuffer) > 0 && Utils::tolower(cellName).find(Utils::tolower(inputBuffer)) == std::string::npos)
 			continue;
 
 		headerId++;
@@ -604,7 +604,7 @@ void Menu::SpawnWeatherSettings(ImGuiID dockspace_id)
 	int globalIndex = 0;
 	for (const auto& [worldSpaceName, effects] : infoList)
 	{
-		if (strlen(inputBuffer) > 0 && worldSpaceName.find(inputBuffer) == std::string::npos)
+		if (strlen(inputBuffer) > 0 && Utils::tolower(worldSpaceName).find(Utils::tolower(inputBuffer)) == std::string::npos)
 			continue;
 
 		headerId++;
