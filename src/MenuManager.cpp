@@ -39,10 +39,9 @@ bool MenuManager::CreateCombo(const char* label, std::string& currentItem, std::
 	return itemChanged;
 }
 
-bool MenuManager::CreateTreeNode(const char* label, std::vector<std::string>& selectedItems, std::vector<std::string>& items)
+bool MenuManager::CreateTreeNode(const char* label, std::vector<std::string>& selectedItems, std::vector<std::string>& items, char* searchBuffer)
 {
 	bool itemsChanged = false;
-	static char searchBuffer[256] = "";
 
 	if (ImGui::TreeNode(label))
 	{

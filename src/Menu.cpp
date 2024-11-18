@@ -270,6 +270,8 @@ void Menu::AddNewMenu(std::map<std::string, std::vector<MenuToggleInformation>>&
 	static std::vector<std::string> currentMenus;
 	static std::vector<std::string> currentEffects;
 	static bool toggled = false;
+	static char menuSearchBuffer[256];
+	static char effectSearchBuffer[256];
 
 	if (ImGui::BeginPopupModal("Create Menu Entries", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
@@ -283,12 +285,16 @@ void Menu::AddNewMenu(std::map<std::string, std::vector<MenuToggleInformation>>&
 
 		ImGui::Checkbox("Toggled On", &toggled);
 
-		ImGui::Text("Select Menus");
-		CreateTreeNode("Menus", currentMenus, m_menuNames);
+		ImGui::BeginChild("MenusRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
+		CreateTreeNode("Menus", currentMenus, m_menuNames, menuSearchBuffer);
+		ImGui::EndChild();
+
 		ImGui::Separator();
 
 		ImGui::Text("Select Effects");
-		CreateTreeNode("Effects", currentEffects, m_effects);
+		ImGui::BeginChild("EffectsRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
+		CreateTreeNode("Effects", currentEffects, m_effects, effectSearchBuffer);
+		ImGui::EndChild();
 
 		ImGui::Separator();
 		if (ImGui::Button("Finish"))
@@ -694,6 +700,8 @@ void Menu::AddNewTime(std::map<std::string, std::vector<TimeToggleInformation>>&
 	static float currentStartTime;
 	static float currentStopTime;
 	static bool toggled = false;
+	static char effectSearchBuffer[256];
+	static char worldCellSearchBuffer[256];
 
 	static char startHourStr[3] = "00", startMinuteStr[3] = "00";
 	static char stopHourStr[3] = "00", stopMinuteStr[3] = "00";
@@ -712,8 +720,12 @@ void Menu::AddNewTime(std::map<std::string, std::vector<TimeToggleInformation>>&
 			strcpy(stopMinuteStr, "00");
 		}
 
+		ImGui::Checkbox("Toggled On", &toggled);
+
 		ImGui::Text("Select Worldspaces");
-		CreateTreeNode("Worldspaces", currentWorldSpaces, m_worldSpaces);
+		ImGui::BeginChild("eBicWorldSpaceRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
+		CreateTreeNode("Worldspaces", currentWorldSpaces, m_worldSpaces, worldCellSearchBuffer);
+		ImGui::EndChild();
 		ImGui::Separator();
 
 		// Start time
@@ -746,9 +758,9 @@ void Menu::AddNewTime(std::map<std::string, std::vector<TimeToggleInformation>>&
 
 		ImGui::Separator();
 		ImGui::Text("Select Effects");
-		CreateTreeNode("Effects", currentEffects, m_effects);
-		ImGui::SameLine();
-		ImGui::Checkbox("Toggled On", &toggled);
+		ImGui::BeginChild("EffectsRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
+		CreateTreeNode("Effects", currentEffects, m_effects, effectSearchBuffer);
+		ImGui::EndChild();
 
 		ImGui::Separator();
 		if (ImGui::Button("Finish"))
@@ -1043,6 +1055,8 @@ void Menu::AddNewInterior(std::map<std::string, std::vector<InteriorToggleInform
 	static std::vector<std::string> currentCells;
 	static std::vector<std::string> currentEffects;
 	static bool toggled = false;
+	static char effectSearchBuffer[256];
+	static char interiorCellSearchBuffer[256];
 
 	if (ImGui::BeginPopupModal("Create Interior Entries", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
@@ -1054,14 +1068,17 @@ void Menu::AddNewInterior(std::map<std::string, std::vector<InteriorToggleInform
 			toggled = false;
 		}
 
+		ImGui::Checkbox("Toggled On", &toggled);
+
 		ImGui::Text("Select Interior Cells");
-		CreateTreeNode("Cells", currentCells, m_interiorCells);
+		ImGui::BeginChild("CellRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
+		CreateTreeNode("Cells", currentCells, m_interiorCells, interiorCellSearchBuffer);
+		ImGui::EndChild();
 		ImGui::Separator();
 
-		ImGui::Text("Select Effects");
-		CreateTreeNode("Effects", currentEffects, m_effects);
-		ImGui::SameLine();
-		ImGui::Checkbox("Toggled On", &toggled);
+		ImGui::BeginChild("EffectsRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
+		CreateTreeNode("Effects", currentEffects, m_effects, effectSearchBuffer);
+		ImGui::EndChild();
 
 		ImGui::Separator();
 		if (ImGui::Button("Finish"))
@@ -1096,6 +1113,11 @@ void Menu::AddNewWeather(std::map<std::string, std::vector<WeatherToggleInformat
 	static std::vector<std::string> currentWeatherFlags;
 	static bool toggled = false;
 
+	// Local search buffers for each section
+	char worldSpaceSearchBuffer[256] = "";
+	char weatherFlagSearchBuffer[256] = "";
+	char effectSearchBuffer[256] = "";
+
 	if (ImGui::BeginPopupModal("Create Weather Entries", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		// Reset static variables for each popup
@@ -1107,17 +1129,23 @@ void Menu::AddNewWeather(std::map<std::string, std::vector<WeatherToggleInformat
 			toggled = false;
 		}
 
+		ImGui::Checkbox("Toggled On", &toggled);
+
 		ImGui::Text("Select Worldspaces");
-		CreateTreeNode("Worldspaces", currentWorldSpaces, m_worldSpaces);
+		ImGui::BeginChild("WorldspacesRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
+		CreateTreeNode("Worldspaces", currentWorldSpaces, m_worldSpaces, worldSpaceSearchBuffer);
+		ImGui::EndChild();
 
 		ImGui::Text("Select Weatherflags");
-		CreateTreeNode("Weatherflags", currentWeatherFlags, m_weatherFlags);
+		ImGui::BeginChild("WeatherFlagsRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
+		CreateTreeNode("Weatherflags", currentWeatherFlags, m_weatherFlags, weatherFlagSearchBuffer);
+		ImGui::EndChild();
 		ImGui::Separator();
 
 		ImGui::Text("Select Effects");
-		CreateTreeNode("Effects", currentEffects, m_effects);
-		ImGui::SameLine();
-		ImGui::Checkbox("Toggled On", &toggled);
+		ImGui::BeginChild("EffectsRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
+		CreateTreeNode("Effects", currentEffects, m_effects, effectSearchBuffer);
+		ImGui::EndChild();
 
 		ImGui::Separator();
 		if (ImGui::Button("Finish"))
