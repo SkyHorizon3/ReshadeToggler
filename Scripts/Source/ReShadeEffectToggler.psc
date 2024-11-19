@@ -1,5 +1,8 @@
 Scriptname ReShadeEffectToggler Hidden
 
+; returns current ReShade Effect Toggler version
+int[] Function GetVersion() global native
+
 ; returns whether ReShade with full add-on support is found
 Bool Function IsReShadeInstalled() global native
 

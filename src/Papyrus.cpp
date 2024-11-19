@@ -3,6 +3,10 @@
 
 namespace Papyrus
 {
+	std::vector<std::int32_t> GetVersion(RE::StaticFunctionTag*)
+	{
+		return { Plugin::VERSION.major(), Plugin::VERSION.minor(), Plugin::VERSION.patch() };
+	}
 
 	bool IsReShadeInstalled(VM*, StackID, RE::StaticFunctionTag*)
 	{
@@ -52,6 +56,7 @@ namespace Papyrus
 		vm->RegisterFunction("ToggleEffect"sv, className, ToggleEffect, true);
 		vm->RegisterFunction("IsReShadeInstalled"sv, className, IsReShadeInstalled, true);
 		vm->RegisterFunction("ToggleReShade"sv, className, ToggleReShade, true);
+		vm->RegisterFunction("GetVersion"sv, className, GetVersion, true);
 		return true;
 	}
 }
