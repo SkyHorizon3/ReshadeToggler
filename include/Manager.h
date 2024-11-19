@@ -127,6 +127,8 @@ public:
 
 	std::string getPresetPath(const std::string& presetName) const;
 
+	bool isReShadeInstalled() const { return m_isReshadeInstalled; }
+	void setReShadeInstalled(const bool state) { m_isReshadeInstalled = state; }
 
 	template<typename T>
 	void setUniformValue(const reshade::api::effect_uniform_variable& uniformVariable, T* value, size_t count);
@@ -135,6 +137,8 @@ public:
 	void getUniformValue(const reshade::api::effect_uniform_variable& uniformVariable, T* value, size_t count);
 
 	int getUniformDimension(const reshade::api::effect_uniform_variable& uniformVariable) const;
+
+	bool effectExists(const char* effect);
 private:
 
 	void setUniformValues(UniformInfo& uniform);
@@ -156,6 +160,10 @@ private:
 
 	// INI settings
 	std::string m_lastPresetName = "";
+
+
+	//Papyrus stuff
+	bool m_isReshadeInstalled = false;
 
 private:
 	template<typename T>

@@ -853,3 +853,22 @@ int Manager::getUniformDimension(const reshade::api::effect_uniform_variable& un
 	// Default to 1 if none of the conditions above are met (scalar case)
 	return 1;
 }
+
+
+bool Manager::effectExists(const char* effect)
+{
+	bool found = false;
+
+	s_pRuntime->enumerate_techniques(nullptr, [&](reshade::api::effect_runtime* runtime, reshade::api::effect_technique technique)
+		{
+			char nameBuffer[128] = "";
+			runtime->get_technique_effect_name(technique, nameBuffer);
+
+			if (strcmp(effect, nameBuffer) == 0)
+			{
+				found = true;
+			}
+		});
+
+	return found;
+}

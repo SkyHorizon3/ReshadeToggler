@@ -37,6 +37,7 @@ bool Load()
 	{
 		SKSE::log::info("Registered addon");
 		register_addon_events();
+		Manager::GetSingleton()->setReShadeInstalled(true);
 		return true;
 	}
 	else
