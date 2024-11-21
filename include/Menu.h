@@ -38,6 +38,9 @@ private:
 		"kNone", "kRainy", "kPleasant", "kCloudy", "kSnow", "kPermAurora", "kAuroraFollowsSun"
 	};
 
+	std::string m_currentEditingEffect{};
+	int m_editingEffectIndex = -1;
+
 	ImVec4 m_lastMessageColor;
 	std::string m_lastMessage;
 
