@@ -61,12 +61,16 @@ struct WeatherToggleInformation
 	std::string weatherFlag{};
 	bool state = true;
 	bool isToggled = false;
+
+	std::vector<UniformInfo> uniforms;
 };
 
 struct InteriorToggleInformation
 {
 	std::string effectName{};
 	bool state = true;
+
+	std::vector<UniformInfo> uniforms;
 };
 
 struct TimeToggleInformation
@@ -76,6 +80,8 @@ struct TimeToggleInformation
 	float stopTime = 0.f;
 	bool state = true;
 	bool isToggled = false;
+
+	std::vector<UniformInfo> uniforms;
 };
 
 class Manager : public ISingleton<Manager>

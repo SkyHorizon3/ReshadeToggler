@@ -221,29 +221,9 @@ void Menu::SpawnMenuSettings(ImGuiID dockspace_id)
 
 				if (editingEffectIndex == globalIndex)
 				{
-					static std::vector<UniformInfo> menuUniformInfos;
-
 					auto& targetUniforms = updatedInfoList[menuName].at(i).uniforms;
-					//SKSE::log::debug("Before updating, uniforms size: {}", targetUniforms.size());
-
-					menuUniformInfos = std::move(targetUniforms);
-
-					EditValues(currentEditingEffect, menuUniformInfos);
-
-					if (!menuUniformInfos.empty())
-					{
-						targetUniforms = std::move(menuUniformInfos);
-						//SKSE::log::debug("After updating, uniforms size: {}", targetUniforms.size());
-					}
-
-					if (!ImGui::IsPopupOpen("Edit Effect Values"))
-					{
-						editingEffectIndex = -1;
-						currentEditingEffect.clear();
-						menuUniformInfos.clear();
-					}
+					HandleEffectEditing(targetUniforms, currentEditingEffect, editingEffectIndex);
 				}
-
 
 			}
 
@@ -338,6 +318,9 @@ void Menu::SpawnTimeSettings(ImGuiID dockspace_id)
 
 	int headerId = -1;
 	int globalIndex = 0;
+	static std::string currentEditingEffect;
+	static int editingEffectIndex = -1;
+
 	for (const auto& [cellName, effects] : infoList)
 	{
 		if (strlen(inputBuffer) > 0 && Utils::tolower(cellName).find(Utils::tolower(inputBuffer)) == std::string::npos)
@@ -457,7 +440,12 @@ void Menu::SpawnTimeSettings(ImGuiID dockspace_id)
 					globalIndex--;
 					continue;
 				}
-				if (ImGui::Button(editId.c_str())) { ImGui::Text("I do nothing"); }
+				if (ImGui::Button(editId.c_str()))
+				{
+					currentEditingEffect = currentEffectName;
+					editingEffectIndex = globalIndex;
+					ImGui::OpenPopup("Edit Effect Values");
+				}
 				ImGui::TableNextColumn();
 				ImGui::Text("%s", cellName.c_str());
 
@@ -469,6 +457,12 @@ void Menu::SpawnTimeSettings(ImGuiID dockspace_id)
 					info.state = currentEffectState;
 
 					updatedInfoList[cellName].at(i) = info;
+				}
+
+				if (editingEffectIndex == globalIndex)
+				{
+					auto& targetUniforms = updatedInfoList[cellName].at(i).uniforms;
+					HandleEffectEditing(targetUniforms, currentEditingEffect, editingEffectIndex);
 				}
 			}
 			ImGui::EndTable();
@@ -502,6 +496,9 @@ void Menu::SpawnInteriorSettings(ImGuiID dockspace_id)
 
 	int headerId = -1;
 	int globalIndex = 0;
+	static std::string currentEditingEffect;
+	static int editingEffectIndex = -1;
+
 	for (const auto& [cellName, effects] : infoList)
 	{
 		if (strlen(inputBuffer) > 0 && Utils::tolower(cellName).find(Utils::tolower(inputBuffer)) == std::string::npos)
@@ -557,7 +554,13 @@ void Menu::SpawnInteriorSettings(ImGuiID dockspace_id)
 					globalIndex--;
 					continue;
 				}
-				if (ImGui::Button(editId.c_str())) { ImGui::Text("I do nothing"); }
+				if (ImGui::Button(editId.c_str()))
+				{
+					currentEditingEffect = currentEffectName;
+					editingEffectIndex = globalIndex;
+					ImGui::OpenPopup("Edit Effect Values");
+				}
+
 				ImGui::TableNextColumn();
 				ImGui::Text("%s", cellName.c_str());
 
@@ -566,6 +569,12 @@ void Menu::SpawnInteriorSettings(ImGuiID dockspace_id)
 					info.effectName = currentEffectName;
 					info.state = currentEffectState;
 					updatedInfoList[cellName].at(i) = info;
+				}
+
+				if (editingEffectIndex == globalIndex)
+				{
+					auto& targetUniforms = updatedInfoList[cellName].at(i).uniforms;
+					HandleEffectEditing(targetUniforms, currentEditingEffect, editingEffectIndex);
 				}
 			}
 			ImGui::EndTable();
@@ -602,6 +611,9 @@ void Menu::SpawnWeatherSettings(ImGuiID dockspace_id)
 
 	int headerId = -1;
 	int globalIndex = 0;
+	static std::string currentEditingEffect;
+	static int editingEffectIndex = -1;
+
 	for (const auto& [worldSpaceName, effects] : infoList)
 	{
 		if (strlen(inputBuffer) > 0 && Utils::tolower(worldSpaceName).find(Utils::tolower(inputBuffer)) == std::string::npos)
@@ -662,7 +674,13 @@ void Menu::SpawnWeatherSettings(ImGuiID dockspace_id)
 					globalIndex--;
 					continue;
 				}
-				if (ImGui::Button(editId.c_str())) { ImGui::Text("I do nothing"); }
+				if (ImGui::Button(editId.c_str()))
+				{
+					currentEditingEffect = currentEffectName;
+					editingEffectIndex = globalIndex;
+					ImGui::OpenPopup("Edit Effect Values");
+				}
+
 				ImGui::TableNextColumn();
 				ImGui::Text("%s", worldSpaceName.c_str());
 
@@ -672,6 +690,12 @@ void Menu::SpawnWeatherSettings(ImGuiID dockspace_id)
 					info.weatherFlag = currentWeather;
 					info.state = currentEffectState;
 					updatedInfoList[worldSpaceName].at(i) = info;
+				}
+
+				if (editingEffectIndex == globalIndex)
+				{
+					auto& targetUniforms = updatedInfoList[worldSpaceName].at(i).uniforms;
+					HandleEffectEditing(targetUniforms, currentEditingEffect, editingEffectIndex);
 				}
 			}
 			ImGui::EndTable();
@@ -1232,5 +1256,30 @@ void Menu::SaveFile()
 
 			ImGui::EndPopup();
 		}
+	}
+}
+
+
+void Menu::HandleEffectEditing(std::vector<UniformInfo>& targetUniforms, std::string& currentEditingEffect, int& editingEffectIndex)
+{
+	static std::vector<UniformInfo> uniformInfos;
+
+	//SKSE::log::debug("Before updating, uniforms size: {}", targetUniforms.size());
+
+	uniformInfos = std::move(targetUniforms);
+
+	EditValues(currentEditingEffect, uniformInfos);
+
+	if (!uniformInfos.empty())
+	{
+		targetUniforms = std::move(uniformInfos);
+		//SKSE::log::debug("After updating, uniforms size: {}", targetUniforms.size());
+	}
+
+	if (!ImGui::IsPopupOpen("Edit Effect Values"))
+	{
+		editingEffectIndex = -1;
+		currentEditingEffect.clear();
+		uniformInfos.clear();
 	}
 }

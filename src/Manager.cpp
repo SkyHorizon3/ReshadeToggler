@@ -145,7 +145,10 @@ std::vector<std::string> Manager::enumerateMenus() const
 	const auto ui = RE::UI::GetSingleton();
 	std::vector<std::string> menuNames;
 
-	for (const auto& menu : ui->menuMap)
+	const auto& map = ui->menuMap;
+	menuNames.reserve(map.size());
+
+	for (const auto& menu : map)
 	{
 		menuNames.emplace_back(menu.first.c_str());
 	}
@@ -386,6 +389,11 @@ void Manager::toggleEffectWeather()
 			toggleEffect(info.effectName.c_str(), !info.state);
 			info.isToggled = false;
 		}
+
+		for (auto& uniform : info.uniforms)
+		{
+			setUniformValues(uniform);
+		}
 	}
 }
 
@@ -441,6 +449,11 @@ void Manager::toggleEffectTime()
 			toggleEffect(timeInfo.effectName.c_str(), !timeInfo.state);
 			timeInfo.isToggled = false;
 		}
+
+		for (auto& uniform : timeInfo.uniforms)
+		{
+			setUniformValues(uniform);
+		}
 	}
 
 }
@@ -484,6 +497,11 @@ void Manager::toggleEffectInterior(const bool isInterior)
 		toggleEffect(info.effectName.c_str(), info.state);
 
 		lastCell.second.emplace_back(info);
+
+		for (auto& uniform : info.uniforms)
+		{
+			setUniformValues(uniform);
+		}
 	}
 	lastCell.first = cell;
 
@@ -854,13 +872,15 @@ int Manager::getUniformDimension(const reshade::api::effect_uniform_variable& un
 	return 1;
 }
 
-
 bool Manager::effectExists(const char* effect)
 {
 	bool found = false;
 
 	s_pRuntime->enumerate_techniques(nullptr, [&](reshade::api::effect_runtime* runtime, reshade::api::effect_technique technique)
 		{
+			if (found)
+				return;
+
 			char nameBuffer[128] = "";
 			runtime->get_technique_effect_name(technique, nameBuffer);
 
