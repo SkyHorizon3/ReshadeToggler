@@ -21,22 +21,28 @@ struct UniformInfo
 		boolValue = value;
 	}
 
-	void setIntValues(int* values, const size_t& count) {
-		if (count > intValues.size()) {
+	void setIntValues(int* values, const size_t& count)
+	{
+		if (count > intValues.size())
+		{
 			intValues.resize(count);
 		}
 		std::copy(values, values + count, intValues.begin());
 	}
 
-	void setFloatValues(float* values, const size_t& count) {
-		if (count > floatValues.size()) {
+	void setFloatValues(float* values, const size_t& count)
+	{
+		if (count > floatValues.size())
+		{
 			floatValues.resize(count);
 		}
 		std::copy(values, values + count, floatValues.begin());
 	}
 
-	void setUIntValues(unsigned int* values, const size_t& count) {
-		if (count > uintValues.size()) {
+	void setUIntValues(unsigned int* values, const size_t& count)
+	{
+		if (count > uintValues.size())
+		{
 			uintValues.resize(count);
 		}
 		std::copy(values, values + count, uintValues.begin());
@@ -116,6 +122,8 @@ public:
 
 	void toggleEffect(const char* technique, bool state) const;
 
+	void toggleReshade(bool state);
+
 	std::map<std::string, std::vector<MenuToggleInformation>> getMenuToggleInfo() const { return m_menuToggleInfo; }
 	void setMenuToggleInfo(const std::map<std::string, std::vector<MenuToggleInformation>>& info) { m_menuToggleInfo = info; }
 
@@ -145,6 +153,13 @@ public:
 	int getUniformDimension(const reshade::api::effect_uniform_variable& uniformVariable) const;
 
 	bool effectExists(const char* effect);
+
+
+	// CLEAN ME UP PLEAAAAAAAAAAAAAAAAAAAAAASE
+	// I am too lazy to greate getters here, so they public
+
+	// name, toggleOff
+	mutable std::unordered_map<std::string, bool> m_reshadeToggle;
 private:
 
 	void setUniformValues(UniformInfo& uniform);
@@ -177,6 +192,8 @@ private:
 
 	template<typename T>
 	bool serializeMap(const std::string& key, const std::map<std::string, std::vector<T>>& map, std::string& output);
+
+	bool serializeMapOfBool(const std::string& key, const std::unordered_map<std::string, bool>& map, std::string& output);
 
 	template<typename... Args>
 	bool serializeArbitraryData(std::string& output, const Args&... args);

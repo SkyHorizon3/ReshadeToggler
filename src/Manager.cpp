@@ -100,16 +100,15 @@ std::vector<std::string> Manager::enumerateEffects() const
 {
 	std::vector<std::string> effects;
 
-	s_pRuntime->enumerate_techniques(nullptr, [&](reshade::api::effect_runtime* runtime, reshade::api::effect_technique technique)
+	s_pRuntime->enumerate_techniques(nullptr, [&](reshade::api::effect_runtime* runtime, reshade::api::effect_technique technique) {
+		char nameBuffer[128] = "";
+
+		runtime->get_technique_effect_name(technique, nameBuffer);
+
+		if (std::find(effects.begin(), effects.end(), nameBuffer) == effects.end())
 		{
-			char nameBuffer[128] = "";
-
-			runtime->get_technique_effect_name(technique, nameBuffer);
-
-			if (std::find(effects.begin(), effects.end(), nameBuffer) == effects.end())
-			{
-				effects.emplace_back(nameBuffer);
-			}
+			effects.emplace_back(nameBuffer);
+		}
 
 		});
 
@@ -121,20 +120,19 @@ std::vector<std::string> Manager::enumerateActiveEffects() const
 {
 	std::vector<std::string> effects;
 
-	s_pRuntime->enumerate_techniques(nullptr, [&](reshade::api::effect_runtime* runtime, reshade::api::effect_technique technique)
+	s_pRuntime->enumerate_techniques(nullptr, [&](reshade::api::effect_runtime* runtime, reshade::api::effect_technique technique) {
+		if (runtime->get_technique_state(technique))
 		{
-			if (runtime->get_technique_state(technique))
+			char nameBuffer[128] = "";
+
+			runtime->get_technique_effect_name(technique, nameBuffer);
+
+			if (std::find(effects.begin(), effects.end(), nameBuffer) == effects.end())
 			{
-				char nameBuffer[128] = "";
-
-				runtime->get_technique_effect_name(technique, nameBuffer);
-
-				if (std::find(effects.begin(), effects.end(), nameBuffer) == effects.end())
-				{
-					effects.emplace_back(nameBuffer);
-				}
-
+				effects.emplace_back(nameBuffer);
 			}
+
+		}
 		});
 
 	return effects;
@@ -151,6 +149,7 @@ std::vector<std::string> Manager::enumerateMenus() const
 	for (const auto& menu : map)
 	{
 		menuNames.emplace_back(menu.first.c_str());
+		m_reshadeToggle[menu.first.c_str()] = false;
 	}
 	std::sort(menuNames.begin(), menuNames.end());
 	return menuNames;
@@ -165,7 +164,10 @@ std::vector<std::string> Manager::enumerateWorldSpaces() const
 	for (const auto& space : ws)
 	{
 		if (space)
+		{
 			worldSpaces.emplace_back(constructKey(space));
+			m_reshadeToggle[constructKey(space)] = false;
+		}
 	}
 
 	return worldSpaces;
@@ -183,6 +185,7 @@ std::vector<std::string> Manager::enumerateInteriorCells() const
 		if (cell)
 		{
 			interiorCells.emplace_back(constructKey(cell));
+			m_reshadeToggle[constructKey(cell)] = false;
 		}
 	}
 
@@ -210,9 +213,20 @@ std::string Manager::constructKey(const RE::TESForm* form) const
 
 void Manager::toggleEffectMenu(const std::unordered_set<std::string>& openMenus)
 {
+	// In the name of god, my brain is so fried today. Please forgive the horrible code that is about to be written...
 	for (auto& [menuName, menuInfoList] : m_menuToggleInfo)
 	{
 		const bool isOpen = openMenus.find(menuName) != openMenus.end();
+
+		if (isOpen && m_reshadeToggle.find(menuName) != m_reshadeToggle.end() && m_reshadeToggle.at(menuName) == true)
+		{
+			toggleReshade(false);
+			continue;
+		}
+		else
+		{
+			toggleReshade(true);
+		}
 
 		for (auto& info : menuInfoList)
 		{
@@ -379,6 +393,18 @@ void Manager::toggleEffectWeather()
 	{
 		if (info.weatherFlag == weatherFlag)
 		{
+			if (m_reshadeToggle.find(it->first) != m_reshadeToggle.end() && m_reshadeToggle.at(it->first) == true)
+			{
+				toggleReshade(false);
+				lastWs.second.emplace_back(info);
+				continue;
+			}
+			else
+			{
+				toggleReshade(true);
+				lastWs.second.emplace_back(info);
+			}
+
 			toggleEffect(info.effectName.c_str(), info.state);
 			info.isToggled = true;
 			lastWs.first = ws;
@@ -436,6 +462,18 @@ void Manager::toggleEffectTime()
 
 		if (inRange)
 		{
+			if (m_reshadeToggle.find(it->first) != m_reshadeToggle.end() && m_reshadeToggle.at(it->first) == true)
+			{
+				toggleReshade(false);
+				lastWs.second.emplace_back(timeInfo);
+				continue;
+			}
+			else
+			{
+				toggleReshade(true);
+				lastWs.second.emplace_back(timeInfo);
+			}
+
 			if (!timeInfo.isToggled)
 			{
 				toggleEffect(timeInfo.effectName.c_str(), timeInfo.state);
@@ -494,6 +532,18 @@ void Manager::toggleEffectInterior(const bool isInterior)
 
 	for (auto& info : it->second)
 	{
+		if (m_reshadeToggle.find(it->first) != m_reshadeToggle.end() && m_reshadeToggle.at(it->first) == true)
+		{
+			toggleReshade(false);
+			lastCell.second.emplace_back(info);
+			continue;
+		}
+		else
+		{
+			toggleReshade(true);
+			lastCell.second.emplace_back(info);
+		}
+
 		toggleEffect(info.effectName.c_str(), info.state);
 
 		lastCell.second.emplace_back(info);
@@ -518,10 +568,14 @@ bool Manager::timeWithinRange(const float& startTime, const float& stopTime) con
 
 void Manager::toggleEffect(const char* effect, const bool state) const
 {
-	s_pRuntime->enumerate_techniques(effect, [&state](reshade::api::effect_runtime* runtime, reshade::api::effect_technique technique)
-		{
-			runtime->set_technique_state(technique, state); // True = enabled; False = disabled
+	s_pRuntime->enumerate_techniques(effect, [&state](reshade::api::effect_runtime* runtime, reshade::api::effect_technique technique) {
+		runtime->set_technique_state(technique, state); // True = enabled; False = disabled
 		});
+}
+
+void Manager::toggleReshade(bool state)
+{
+	s_pRuntime->set_effects_state(state);
 }
 
 #pragma region TemplateTomfoolery
@@ -545,7 +599,8 @@ bool Manager::serializeVector(const std::string& key, const std::vector<T>& vec,
 {
 	std::string vecJson;
 	const auto result = glz::write_json(vec, vecJson);  // Serialize the vector
-	if (result) {
+	if (result)
+	{
 		const std::string descriptive_error = glz::format_error(result, vecJson);
 		SKSE::log::error("Error serializing vector: {}", descriptive_error);
 		return false;
@@ -562,16 +617,34 @@ bool Manager::serializeMap(const std::string& key, const std::map<std::string, s
 	mapJson << "{ ";
 
 	bool first = true;
-	for (const auto& pair : map) {
+	for (const auto& pair : map)
+	{
 		std::string vecJson;
 		const auto result = glz::write_json(pair.second, vecJson);
-		if (result) {
+		if (result)
+		{
 			const std::string descriptive_error = glz::format_error(result, vecJson);
 			SKSE::log::error("Error serializing vector for key {}: {}", pair.first, descriptive_error);
 			return false;
 		}
 
 		mapJson << (first ? (first = false, "") : ", ") << "\"" << pair.first << "\": " << vecJson;
+	}
+
+	mapJson << " }";
+	output = "\"" + key + "\": " + mapJson.str();
+	return true;
+}
+
+bool Manager::serializeMapOfBool(const std::string& key, const std::unordered_map<std::string, bool>& map, std::string& output)
+{
+	std::stringstream mapJson;
+	mapJson << "{ ";
+
+	bool first = true;
+	for (const auto& pair : map)
+	{
+		mapJson << (first ? (first = false, "") : ", ") << "\"" << pair.first << "\": " << (pair.second ? "true" : "false");
 	}
 
 	mapJson << " }";
@@ -590,25 +663,32 @@ bool Manager::serializeArbitraryData(std::string& output, const Args&... args)
 
 	auto processArg = [&](const auto& pair) {
 		std::string serialized;
-		if constexpr (std::is_same_v<std::decay_t<decltype(pair.second)>, std::vector<typename std::decay_t<decltype(pair.second)>::value_type>>) {
+		if constexpr (std::is_same_v<std::decay_t<decltype(pair.second)>, std::vector<typename std::decay_t<decltype(pair.second)>::value_type>>)
+		{
 			// Handle vector case
-			if (serializeVector(pair.first, pair.second, serialized)) {
+			if (serializeVector(pair.first, pair.second, serialized))
+			{
 				jsonStream << (first ? (first = false, "") : ", ") << serialized;
 			}
-			else {
+			else
+			{
 				success = false;
 			}
 		}
-		else if constexpr (std::is_same_v<std::decay_t<decltype(pair.second)>, std::map<std::string, std::vector<typename std::decay_t<decltype(pair.second)>::mapped_type::value_type>>>) {
-			// Handle unordered_map case
-			if (serializeMap(pair.first, pair.second, serialized)) {
+		else if constexpr (std::is_same_v<std::decay_t<decltype(pair.second)>, std::map<std::string, std::vector<typename std::decay_t<decltype(pair.second)>::mapped_type::value_type>>>)
+		{
+			// Handle map of vector case
+			if (serializeMap(pair.first, pair.second, serialized))
+			{
 				jsonStream << (first ? (first = false, "") : ", ") << serialized;
 			}
-			else {
+			else
+			{
 				success = false;
 			}
 		}
-		else {
+		else
+		{
 			SKSE::log::error("Unsupported type for serialization");
 			success = false;
 		}
@@ -623,24 +703,29 @@ bool Manager::serializeArbitraryData(std::string& output, const Args&... args)
 	return success;
 }
 
+
 template <typename T>
 bool Manager::deserializeVector(const std::string& key, const glz::json_t& json, std::vector<T>& vec)
 {
-	if (json.contains(key)) {
+	if (json.contains(key))
+	{
 		std::string buffer;
 		const auto write_result = glz::write_json(json[key], buffer);
-		if (write_result) {
+		if (write_result)
+		{
 			SKSE::log::error("Error serializing JSON for key '{}'.", key);
 			return false;
 		}
 
 		const auto read_result = glz::read_json(vec, buffer);
-		if (read_result) {
+		if (read_result)
+		{
 			SKSE::log::error("Error deserializing vector for key '{}'.", key);
 			return false;
 		}
 	}
-	else {
+	else
+	{
 		SKSE::log::error("Key '{}' not found in JSON.", key);
 		return false;
 	}
@@ -650,29 +735,34 @@ bool Manager::deserializeVector(const std::string& key, const glz::json_t& json,
 template <typename T>
 bool Manager::deserializeMapOfVectors(const std::string& key, const glz::json_t& json, std::map<std::string, std::vector<T>>& map)
 {
-	if (json.contains(key)) {
+	if (json.contains(key))
+	{
 		const auto& mapData = json[key].get_object();
 		map.clear();
-		for (const auto& [subKey, subValue] : mapData) {
+		for (const auto& [subKey, subValue] : mapData)
+		{
 			std::vector<T> vec;
 
 			// Serialize the subValue to a string and then deserialize into the vector
 			std::string buffer;
 			const auto write_result = glz::write_json(subValue, buffer);
-			if (write_result) {
+			if (write_result)
+			{
 				SKSE::log::error("Error serializing JSON for subKey '{}'.", subKey);
 				return false;
 			}
 
 			const auto read_result = glz::read_json(vec, buffer);
-			if (read_result) {
+			if (read_result)
+			{
 				SKSE::log::error("Error deserializing vector for subKey '{}'.", subKey);
 				return false;
 			}
 			map[subKey] = std::move(vec);
 		}
 	}
-	else {
+	else
+	{
 		SKSE::log::error("Key '{}' not found in JSON.", key);
 		return false;
 	}
@@ -684,7 +774,8 @@ bool Manager::deserializeArbitraryData(const std::string& buf, Args&... args)
 {
 	glz::json_t json{};
 	const auto result = glz::read_json(json, buf);
-	if (result) {
+	if (result)
+	{
 		const std::string descriptive_error = glz::format_error(result, buf);
 		SKSE::log::error("Error parsing JSON: {}", descriptive_error);
 		return false;
@@ -692,10 +783,12 @@ bool Manager::deserializeArbitraryData(const std::string& buf, Args&... args)
 	bool success = true;
 
 	auto process_pair = [&](auto& pair) {
-		if constexpr (std::is_same_v<std::decay_t<decltype(pair.second)>, std::vector<typename std::decay_t<decltype(pair.second)>::value_type>>) {
+		if constexpr (std::is_same_v<std::decay_t<decltype(pair.second)>, std::vector<typename std::decay_t<decltype(pair.second)>::value_type>>)
+		{
 			return deserializeVector(pair.first, json, pair.second);
 		}
-		else if constexpr (std::is_same_v<std::decay_t<decltype(pair.second)>, std::map<std::string, std::vector<typename std::decay_t<decltype(pair.second)>::mapped_type::value_type>>>) {
+		else if constexpr (std::is_same_v<std::decay_t<decltype(pair.second)>, std::map<std::string, std::vector<typename std::decay_t<decltype(pair.second)>::mapped_type::value_type>>>)
+		{
 			return deserializeMapOfVectors(pair.first, json, pair.second);
 		}
 		else
@@ -780,56 +873,55 @@ std::vector<UniformInfo> Manager::enumerateUniformNames(const std::string& effec
 {
 	std::vector<UniformInfo> uniforms;
 
-	s_pRuntime->enumerate_uniform_variables(effectName.c_str(), [&](reshade::api::effect_runtime* runtime, reshade::api::effect_uniform_variable uniform)
+	s_pRuntime->enumerate_uniform_variables(effectName.c_str(), [&](reshade::api::effect_runtime* runtime, reshade::api::effect_uniform_variable uniform) {
+		using format = reshade::api::format;
+
+		char name[128] = "";
+		runtime->get_uniform_variable_name(uniform, name);
+
+		UniformInfo uniformInfo(name, uniform);
+
+		format baseType = format::unknown;
+		runtime->get_uniform_variable_type(uniform, &baseType);
+
+		switch (baseType)
 		{
-			using format = reshade::api::format;
-
-			char name[128] = "";
-			runtime->get_uniform_variable_name(uniform, name);
-
-			UniformInfo uniformInfo(name, uniform);
-
-			format baseType = format::unknown;
-			runtime->get_uniform_variable_type(uniform, &baseType);
-
-			switch (baseType)
-			{
-			case format::r32_float:
-			{
-				float values[4] = { 0.0f };
-				int numElements = std::min(4, getUniformDimension(uniform));
-				getUniformValue(uniform, values, numElements);
-				uniformInfo.setFloatValues(values, numElements);
-			}
+		case format::r32_float:
+		{
+			float values[4] = { 0.0f };
+			int numElements = std::min(4, getUniformDimension(uniform));
+			getUniformValue(uniform, values, numElements);
+			uniformInfo.setFloatValues(values, numElements);
+		}
+		break;
+		case format::r32_sint:
+		{
+			int values[4] = { 0 };
+			int numElements = std::min(4, getUniformDimension(uniform));
+			getUniformValue(uniform, values, numElements);
+			uniformInfo.setIntValues(values, numElements);
+		}
+		break;
+		case format::r32_uint:
+		{
+			unsigned int values[4] = { 0 };
+			int numElements = std::min(4, getUniformDimension(uniform));
+			getUniformValue(uniform, values, numElements);
+			uniformInfo.setUIntValues(values, numElements);
+		}
+		break;
+		case format::r32_typeless:
+		{
+			bool value = false;
+			getUniformValue(uniform, &value, 1);
+			uniformInfo.setBoolValues(static_cast<uint8_t>(value));
+		}
+		break;
+		default:
 			break;
-			case format::r32_sint:
-			{
-				int values[4] = { 0 };
-				int numElements = std::min(4, getUniformDimension(uniform));
-				getUniformValue(uniform, values, numElements);
-				uniformInfo.setIntValues(values, numElements);
-			}
-			break;
-			case format::r32_uint:
-			{
-				unsigned int values[4] = { 0 };
-				int numElements = std::min(4, getUniformDimension(uniform));
-				getUniformValue(uniform, values, numElements);
-				uniformInfo.setUIntValues(values, numElements);
-			}
-			break;
-			case format::r32_typeless:
-			{
-				bool value = false;
-				getUniformValue(uniform, &value, 1);
-				uniformInfo.setBoolValues(static_cast<uint8_t>(value));
-			}
-			break;
-			default:
-				break;
-			}
+		}
 
-			uniforms.emplace_back(std::move(uniformInfo));
+		uniforms.emplace_back(std::move(uniformInfo));
 		});
 
 	return uniforms;
@@ -876,18 +968,17 @@ bool Manager::effectExists(const char* effect)
 {
 	bool found = false;
 
-	s_pRuntime->enumerate_techniques(nullptr, [&](reshade::api::effect_runtime* runtime, reshade::api::effect_technique technique)
+	s_pRuntime->enumerate_techniques(nullptr, [&](reshade::api::effect_runtime* runtime, reshade::api::effect_technique technique) {
+		if (found)
+			return;
+
+		char nameBuffer[128] = "";
+		runtime->get_technique_effect_name(technique, nameBuffer);
+
+		if (strcmp(effect, nameBuffer) == 0)
 		{
-			if (found)
-				return;
-
-			char nameBuffer[128] = "";
-			runtime->get_technique_effect_name(technique, nameBuffer);
-
-			if (strcmp(effect, nameBuffer) == 0)
-			{
-				found = true;
-			}
+			found = true;
+		}
 		});
 
 	return found;
