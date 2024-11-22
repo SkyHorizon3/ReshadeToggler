@@ -50,7 +50,6 @@ struct UniformInfo
 
 };
 
-
 struct MenuToggleInformation
 {
 	std::string effectName{};
@@ -107,9 +106,9 @@ public:
 	std::vector<std::string> enumeratePresets() const;
 	std::vector<std::string> enumerateEffects() const;
 	std::vector<std::string> enumerateActiveEffects() const;
-	std::vector<std::string> enumerateMenus() const;
-	std::vector<std::string> enumerateWorldSpaces() const;
-	std::vector<std::string> enumerateInteriorCells() const;
+	std::vector<std::string> enumerateMenus();
+	std::vector<std::string> enumerateWorldSpaces();
+	std::vector<std::string> enumerateInteriorCells();
 	std::vector<UniformInfo> enumerateUniformNames(const std::string& effectName);
 
 	void toggleEffectMenu(const std::unordered_set<std::string>& openMenus);
@@ -159,7 +158,7 @@ public:
 	// I am too lazy to greate getters here, so they public
 
 	// name, toggleOff
-	mutable std::unordered_map<std::string, bool> m_reshadeToggle;
+	std::unordered_map<std::string, bool> m_reshadeToggle;
 private:
 
 	void setUniformValues(UniformInfo& uniform);
@@ -193,8 +192,6 @@ private:
 	template<typename T>
 	bool serializeMap(const std::string& key, const std::map<std::string, std::vector<T>>& map, std::string& output);
 
-	bool serializeMapOfBool(const std::string& key, const std::unordered_map<std::string, bool>& map, std::string& output);
-
 	template<typename... Args>
 	bool serializeArbitraryData(std::string& output, const Args&... args);
 
@@ -207,6 +204,8 @@ private:
 	template<typename... Args>
 	bool deserializeArbitraryData(const std::string& buf, Args&... args);
 
+	bool serializeReshadeToggle(const std::string& name, const std::unordered_map<std::string, bool>& reshadeToggle, std::string& output);
+	bool deserializeReshadeToggle(const std::string& key, const glz::json_t& json, std::unordered_map<std::string, bool>& reshadeToggle);
 };
 
 extern reshade::api::effect_runtime* s_pRuntime;

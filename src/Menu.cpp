@@ -149,7 +149,8 @@ void Menu::SpawnMenuSettings(ImGuiID dockspace_id)
 
 		if (ImGui::CollapsingHeader((menuName + "##" + headerUniqueId + "##Header").c_str(), ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_AllowItemOverlap))
 		{
-			ImGui::Checkbox("Disable ReShade", &Manager::GetSingleton()->m_reshadeToggle.at(menuName));
+			std::string boxId = "Disable ReShade##" + headerUniqueId;
+			ImGui::Checkbox(boxId.c_str(), &Manager::GetSingleton()->m_reshadeToggle.at(menuName));
 
 			ImGui::BeginTable(("EffectsTable##" + headerUniqueId).c_str(), 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg);
 			ImGui::TableSetupColumn(("Effect##" + headerUniqueId).c_str());
@@ -329,7 +330,8 @@ void Menu::SpawnTimeSettings(ImGuiID dockspace_id)
 
 		if (ImGui::CollapsingHeader((cellName + "##" + headerUniqueId + "##Header").c_str(), ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_AllowItemOverlap))
 		{
-			ImGui::Checkbox("Disable ReShade", &Manager::GetSingleton()->m_reshadeToggle.at(cellName));
+			std::string boxId = "Disable ReShade##" + headerUniqueId;
+			ImGui::Checkbox(boxId.c_str(), &Manager::GetSingleton()->m_reshadeToggle.at(cellName));
 
 			ImGui::BeginTable(("EffectsTable##" + headerUniqueId).c_str(), 6, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg);
 			ImGui::TableSetupColumn(("Effect##" + headerUniqueId).c_str());
@@ -507,7 +509,8 @@ void Menu::SpawnInteriorSettings(ImGuiID dockspace_id)
 
 		if (ImGui::CollapsingHeader((cellName + "##" + headerUniqueId + "##Header").c_str(), ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_AllowItemOverlap))
 		{
-			ImGui::Checkbox("Disable ReShade", &Manager::GetSingleton()->m_reshadeToggle.at(cellName));
+			std::string boxId = "Disable ReShade##" + headerUniqueId;
+			ImGui::Checkbox(boxId.c_str(), &Manager::GetSingleton()->m_reshadeToggle.at(cellName));
 
 			ImGui::BeginTable(("EffectsTable##" + headerUniqueId).c_str(), 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg);
 			ImGui::TableSetupColumn(("Effect##" + headerUniqueId).c_str());
@@ -622,7 +625,8 @@ void Menu::SpawnWeatherSettings(ImGuiID dockspace_id)
 
 		if (ImGui::CollapsingHeader((worldSpaceName + "##" + headerUniqueId + "##Header").c_str(), ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_AllowItemOverlap))
 		{
-			ImGui::Checkbox("Disable ReShade", &Manager::GetSingleton()->m_reshadeToggle.at(worldSpaceName));
+			std::string boxId = "Disable ReShade##" + headerUniqueId;
+			ImGui::Checkbox(boxId.c_str(), &Manager::GetSingleton()->m_reshadeToggle.at(worldSpaceName));
 
 			ImGui::BeginTable(("EffectsTable##" + headerUniqueId).c_str(), 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg);
 			ImGui::TableSetupColumn(("Effect##" + headerUniqueId).c_str());

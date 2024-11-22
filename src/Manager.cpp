@@ -40,7 +40,8 @@ bool Manager::serializeJSONPreset(const std::string& presetName)
 		std::make_pair("Menu", m_menuToggleInfo),
 		std::make_pair("Time", m_timeToggleInfo),
 		std::make_pair("Weather", m_weatherToggleInfo),
-		std::make_pair("Interior", m_interiorToggleInfo)))
+		std::make_pair("Interior", m_interiorToggleInfo)
+	))
 	{
 		SKSE::log::error("Failed to serialize preset {}!", presetName);
 		return false;
@@ -138,7 +139,7 @@ std::vector<std::string> Manager::enumerateActiveEffects() const
 	return effects;
 }
 
-std::vector<std::string> Manager::enumerateMenus() const
+std::vector<std::string> Manager::enumerateMenus()
 {
 	const auto ui = RE::UI::GetSingleton();
 	std::vector<std::string> menuNames;
@@ -149,13 +150,15 @@ std::vector<std::string> Manager::enumerateMenus() const
 	for (const auto& menu : map)
 	{
 		menuNames.emplace_back(menu.first.c_str());
-		m_reshadeToggle[menu.first.c_str()] = false;
+
+		if (m_reshadeToggle.find(menu.first.c_str()) == m_reshadeToggle.end())
+			m_reshadeToggle[menu.first.c_str()] = false;
 	}
 	std::sort(menuNames.begin(), menuNames.end());
 	return menuNames;
 }
 
-std::vector<std::string> Manager::enumerateWorldSpaces() const
+std::vector<std::string> Manager::enumerateWorldSpaces()
 {
 	const auto& ws = RE::TESDataHandler::GetSingleton()->GetFormArray<RE::TESWorldSpace>();
 	std::vector<std::string> worldSpaces;
@@ -165,15 +168,19 @@ std::vector<std::string> Manager::enumerateWorldSpaces() const
 	{
 		if (space)
 		{
-			worldSpaces.emplace_back(constructKey(space));
-			m_reshadeToggle[constructKey(space)] = false;
+			const std::string constructedKey = constructKey(space);
+
+			worldSpaces.emplace_back(constructedKey);
+
+			if (m_reshadeToggle.find(constructedKey) == m_reshadeToggle.end())
+				m_reshadeToggle[constructedKey] = false;
 		}
 	}
 
 	return worldSpaces;
 }
 
-std::vector<std::string> Manager::enumerateInteriorCells() const
+std::vector<std::string> Manager::enumerateInteriorCells()
 {
 	const auto& cells = RE::TESDataHandler::GetSingleton()->interiorCells;
 
@@ -184,8 +191,11 @@ std::vector<std::string> Manager::enumerateInteriorCells() const
 	{
 		if (cell)
 		{
-			interiorCells.emplace_back(constructKey(cell));
-			m_reshadeToggle[constructKey(cell)] = false;
+			const std::string constructedKey = constructKey(cell);
+
+			interiorCells.emplace_back(constructedKey);
+			if (m_reshadeToggle.find(constructedKey) == m_reshadeToggle.end())
+				m_reshadeToggle[constructedKey] = false;
 		}
 	}
 
@@ -636,19 +646,88 @@ bool Manager::serializeMap(const std::string& key, const std::map<std::string, s
 	return true;
 }
 
-bool Manager::serializeMapOfBool(const std::string& key, const std::unordered_map<std::string, bool>& map, std::string& output)
-{
-	std::stringstream mapJson;
-	mapJson << "{ ";
+/**
+ * Alright, strap in because this is gonna be a rant.
+ * What started as a simple task—serialize and deserialize a damn unordered map of booleans—turned into a hellhole of
+ * compiler tantrums and endless pain. MSVC, in all its infinite wisdom, decided to throw an **Internal Compiler Error**
+ * the moment I tried to make a template work with `std::unordered_map<std::string, bool>`. It's like it saw the map and
+ * just had a mental breakdown. *What the hell is so hard about a map of strings to booleans, MSVC?!*
+ *
+ * After hours of trying to make this work with `else if constexpr`, I finally gave up. The compiler couldn’t handle it,
+ * so now we have this horrific hack in `serializeArbitraryData` just to get past its bullshit:
+ *
+ * ```cpp
+ * std::string serialized;
+ * if (serializeReshadeToggle("ReShadeOff", m_reshadeToggle, serialized))
+ * {
+ *     jsonStream << (first ? (first = false, "") : ", ") << serialized;
+ * }
+ * else
+ * {
+ *     success = false;
+ * }
+ * ```
+ *
+ * Yeah, that’s right, we have to manually throw in a special case for `serializeReshadeToggle` because this compiler
+ * couldn’t figure out a **simple unordered map of strings to booleans**. How the hell is this still an issue in 2024?
+ * It’s not like I’m trying to get some complex, nested type here. It’s a damn map of `std::string` to `bool`! Is that too
+ * much to ask?! No, MSVC just threw a tantrum and forced me into this stupid work-around.
+ *
+ * And don’t even get me started on deserialization. The exact same garbage had to be repeated in the deserialize function.
+ * More duct tape, more hacks, all because MSVC can’t handle a map of strings to booleans with basic template magic.
+ * This shit should *just work* (hehe Todd reference), but no, here I am, caught in this never-ending hell of handcrafting edge cases for a compiler
+ * that just can’t handle the simplest of data structures.
+ *
+ * So here we are, with this abomination of code that works—but at what cost? A shattered soul and hours of frustration,
+ * all because a compiler can’t handle an unordered map of strings and booleans without completely losing its mind.
+ * Fucking hell.
+ *
+ * Yes, I'm done
+ */
 
+bool Manager::serializeReshadeToggle(const std::string& name, const std::unordered_map<std::string, bool>& reshadeToggle, std::string& output)
+{
+	std::stringstream ss;
+	ss << "{ ";
 	bool first = true;
-	for (const auto& pair : map)
+
+	for (const auto& [key, value] : reshadeToggle)
 	{
-		mapJson << (first ? (first = false, "") : ", ") << "\"" << pair.first << "\": " << (pair.second ? "true" : "false");
+		if (!value) continue; // Skip keys with `false` values
+
+		if (!first) ss << ", ";
+		ss << "\"" << key << "\": true";
+		first = false;
 	}
 
-	mapJson << " }";
-	output = "\"" + key + "\": " + mapJson.str();
+	ss << " }";
+	output = "\"" + name + "\": " + ss.str();
+	return true;
+}
+
+bool Manager::deserializeReshadeToggle(const std::string& key, const glz::json_t& json, std::unordered_map<std::string, bool>& reshadeToggle)
+{
+	if (json.contains(key))
+	{
+		const auto& toggleData = json[key].get_object();
+		reshadeToggle.clear();
+
+		for (const auto& [subKey, subValue] : toggleData)
+		{
+			if (!subValue.is_boolean())
+			{
+				SKSE::log::error("Invalid value type for subKey '{}' in reshadeToggle; expected boolean.", subKey);
+				return false;
+			}
+
+			reshadeToggle[subKey] = subValue.get_boolean();
+		}
+	}
+	else
+	{
+		SKSE::log::error("Key '{}' not found in JSON for reshadeToggle.", key);
+		return false;
+	}
 	return true;
 }
 
@@ -696,6 +775,16 @@ bool Manager::serializeArbitraryData(std::string& output, const Args&... args)
 
 	// Process each argument pair
 	(processArg(args), ...);
+
+	std::string serialized;
+	if (serializeReshadeToggle("ReShadeOff", m_reshadeToggle, serialized))
+	{
+		jsonStream << (first ? (first = false, "") : ", ") << serialized;
+	}
+	else
+	{
+		success = false;
+	}
 
 	jsonStream << " }";
 	output = jsonStream.str();
@@ -798,6 +887,7 @@ bool Manager::deserializeArbitraryData(const std::string& buf, Args&... args)
 		};
 
 	((success &= process_pair(args)), ...);
+	success = deserializeReshadeToggle("ReShadeOff", json, m_reshadeToggle);
 	return success;
 }
 
