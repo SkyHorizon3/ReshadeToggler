@@ -24,6 +24,7 @@ private:
 	void ClampInputValue(char* inputStr, int maxVal);
 	void EditValues(const std::string& effectName, std::vector<UniformInfo>& toReturn);
 	void HandleEffectEditing(std::vector<UniformInfo>& targetUniforms, std::string& currentEditingEffect, int& editingEffectIndex);
+	void DisableReShade(const std::string& headerUniqueId, const std::string& key);
 private:
 
 	char m_inputBuffer[256] = { 0 };

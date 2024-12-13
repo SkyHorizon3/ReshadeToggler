@@ -105,12 +105,12 @@ public:
 
 	std::vector<std::string> enumeratePresets() const;
 	std::vector<std::string> enumerateEffects() const;
-	std::vector<std::string> enumerateActiveEffects() const;
 	std::vector<std::string> enumerateMenus();
 	std::vector<std::string> enumerateWorldSpaces();
 	std::vector<std::string> enumerateInteriorCells();
 	std::vector<UniformInfo> enumerateUniformNames(const std::string& effectName);
 
+	bool toggleReShadeMenu(const std::unordered_set<std::string>& openMenus);
 	void toggleEffectMenu(const std::unordered_set<std::string>& openMenus);
 
 	void toggleEffectWeather();
@@ -153,12 +153,8 @@ public:
 
 	bool effectExists(const char* effect);
 
+	std::unordered_map<std::string, bool>& getReShadeToggle() { return m_reshadeToggle; }
 
-	// CLEAN ME UP PLEAAAAAAAAAAAAAAAAAAAAAASE
-	// I am too lazy to greate getters here, so they public
-
-	// name, toggleOff
-	std::unordered_map<std::string, bool> m_reshadeToggle;
 private:
 
 	void setUniformValues(UniformInfo& uniform);
@@ -177,6 +173,8 @@ private:
 	std::map<std::string, std::vector<WeatherToggleInformation>> m_weatherToggleInfo;
 	std::map<std::string, std::vector<InteriorToggleInformation>> m_interiorToggleInfo;
 	std::map<std::string, std::vector<TimeToggleInformation>> m_timeToggleInfo;
+
+	std::unordered_map<std::string, bool> m_reshadeToggle;
 
 	// INI settings
 	std::string m_lastPresetName = "";

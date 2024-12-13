@@ -41,7 +41,7 @@ bool Manager::serializeJSONPreset(const std::string& presetName)
 		std::make_pair("Time", m_timeToggleInfo),
 		std::make_pair("Weather", m_weatherToggleInfo),
 		std::make_pair("Interior", m_interiorToggleInfo)
-	))
+		))
 	{
 		SKSE::log::error("Failed to serialize preset {}!", presetName);
 		return false;
@@ -117,28 +117,6 @@ std::vector<std::string> Manager::enumerateEffects() const
 	return effects;
 }
 
-std::vector<std::string> Manager::enumerateActiveEffects() const
-{
-	std::vector<std::string> effects;
-
-	s_pRuntime->enumerate_techniques(nullptr, [&](reshade::api::effect_runtime* runtime, reshade::api::effect_technique technique) {
-		if (runtime->get_technique_state(technique))
-		{
-			char nameBuffer[128] = "";
-
-			runtime->get_technique_effect_name(technique, nameBuffer);
-
-			if (std::find(effects.begin(), effects.end(), nameBuffer) == effects.end())
-			{
-				effects.emplace_back(nameBuffer);
-			}
-
-		}
-		});
-
-	return effects;
-}
-
 std::vector<std::string> Manager::enumerateMenus()
 {
 	const auto ui = RE::UI::GetSingleton();
@@ -150,9 +128,6 @@ std::vector<std::string> Manager::enumerateMenus()
 	for (const auto& menu : map)
 	{
 		menuNames.emplace_back(menu.first.c_str());
-
-		if (m_reshadeToggle.find(menu.first.c_str()) == m_reshadeToggle.end())
-			m_reshadeToggle[menu.first.c_str()] = false;
 	}
 	std::sort(menuNames.begin(), menuNames.end());
 	return menuNames;
@@ -169,11 +144,7 @@ std::vector<std::string> Manager::enumerateWorldSpaces()
 		if (space)
 		{
 			const std::string constructedKey = constructKey(space);
-
 			worldSpaces.emplace_back(constructedKey);
-
-			if (m_reshadeToggle.find(constructedKey) == m_reshadeToggle.end())
-				m_reshadeToggle[constructedKey] = false;
 		}
 	}
 
@@ -192,10 +163,7 @@ std::vector<std::string> Manager::enumerateInteriorCells()
 		if (cell)
 		{
 			const std::string constructedKey = constructKey(cell);
-
 			interiorCells.emplace_back(constructedKey);
-			if (m_reshadeToggle.find(constructedKey) == m_reshadeToggle.end())
-				m_reshadeToggle[constructedKey] = false;
 		}
 	}
 
@@ -221,9 +189,26 @@ std::string Manager::constructKey(const RE::TESForm* form) const
 	return std::format("{:08X}|{}|{}", Utils::getTrimmedFormID(form), form->GetFormEditorID(), Utils::getModName(form));
 }
 
+bool Manager::toggleReShadeMenu(const std::unordered_set<std::string>& openMenus)
+{
+	for (const auto& menuName : openMenus)
+	{
+		const bool isOpen = openMenus.find(menuName) != openMenus.end();
+
+		if (isOpen && m_reshadeToggle.find(menuName) != m_reshadeToggle.end() && m_reshadeToggle.at(menuName) == true)
+		{
+			toggleReshade(false);
+		}
+		else
+		{
+			toggleReshade(true);
+		}
+
+	}
+}
+
 void Manager::toggleEffectMenu(const std::unordered_set<std::string>& openMenus)
 {
-	// In the name of god, my brain is so fried today. Please forgive the horrible code that is about to be written...
 	for (auto& [menuName, menuInfoList] : m_menuToggleInfo)
 	{
 		const bool isOpen = openMenus.find(menuName) != openMenus.end();
@@ -412,7 +397,6 @@ void Manager::toggleEffectWeather()
 			else
 			{
 				toggleReshade(true);
-				lastWs.second.emplace_back(info);
 			}
 
 			toggleEffect(info.effectName.c_str(), info.state);
@@ -481,7 +465,6 @@ void Manager::toggleEffectTime()
 			else
 			{
 				toggleReshade(true);
-				lastWs.second.emplace_back(timeInfo);
 			}
 
 			if (!timeInfo.isToggled)
@@ -551,7 +534,6 @@ void Manager::toggleEffectInterior(const bool isInterior)
 		else
 		{
 			toggleReshade(true);
-			lastCell.second.emplace_back(info);
 		}
 
 		toggleEffect(info.effectName.c_str(), info.state);
