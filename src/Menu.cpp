@@ -1134,12 +1134,12 @@ void Menu::AddNewWeather(std::map<std::string, std::vector<WeatherToggleInformat
 {
 	static std::vector<std::string> currentWorldSpaces;
 	static std::vector<std::string> currentEffects;
-	static std::vector<std::string> currentWeatherFlags;
+	static std::vector<std::string> currentWeather;
 	static bool toggled = false;
 
 	// Local search buffers for each section
 	char worldSpaceSearchBuffer[256] = "";
-	char weatherFlagSearchBuffer[256] = "";
+	char weatherSearchBuffer[256] = "";
 	char effectSearchBuffer[256] = "";
 
 	if (ImGui::BeginPopupModal("Create Weather Entries", NULL, ImGuiWindowFlags_AlwaysAutoResize))
@@ -1148,7 +1148,7 @@ void Menu::AddNewWeather(std::map<std::string, std::vector<WeatherToggleInformat
 		if (ImGui::IsWindowAppearing())
 		{
 			currentWorldSpaces.clear();
-			currentWeatherFlags.clear();
+			currentWeather.clear();
 			currentEffects.clear();
 			toggled = false;
 		}
@@ -1160,9 +1160,9 @@ void Menu::AddNewWeather(std::map<std::string, std::vector<WeatherToggleInformat
 		CreateTreeNode("Worldspaces", currentWorldSpaces, m_worldSpaces, worldSpaceSearchBuffer);
 		ImGui::EndChild();
 
-		ImGui::Text("Select Weatherflags");
-		ImGui::BeginChild("WeatherFlagsRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
-		CreateTreeNode("Weather", currentWeatherFlags, m_weathers, weatherFlagSearchBuffer);
+		ImGui::Text("Select Weather");
+		ImGui::BeginChild("WeatherRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
+		CreateTreeNode("Weather", currentWeather, m_weathers, weatherSearchBuffer);
 		ImGui::EndChild();
 		ImGui::Separator();
 
@@ -1178,9 +1178,9 @@ void Menu::AddNewWeather(std::map<std::string, std::vector<WeatherToggleInformat
 			{
 				for (const auto& effect : currentEffects)
 				{
-					for (const auto& flag : currentWeatherFlags)
+					for (const auto& weather : currentWeather)
 					{
-						updatedInfoList[ws].emplace_back(WeatherToggleInformation{ effect, flag, toggled });
+						updatedInfoList[ws].emplace_back(WeatherToggleInformation{ effect, weather, toggled });
 					}
 				}
 			}

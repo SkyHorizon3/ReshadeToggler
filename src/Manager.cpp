@@ -674,6 +674,8 @@ bool Manager::deserializeReshadeToggle(const std::string& key, const glz::json_t
 	return true;
 }
 
+// To some random person reading this, who is neither Sky nor me:
+// This abomination exists because when we started using glaze it did not yet support serialisation as we needed it.
 template <typename... Args>
 bool Manager::serializeArbitraryData(std::string& output, const Args&... args)
 {
