@@ -63,7 +63,7 @@ struct MenuToggleInformation
 struct WeatherToggleInformation
 {
 	std::string effectName{};
-	std::string weatherFlag{};
+	std::string weather{};
 	bool state = true;
 	bool isToggled = false;
 
@@ -108,6 +108,7 @@ public:
 	std::vector<std::string> enumerateMenus();
 	std::vector<std::string> enumerateWorldSpaces();
 	std::vector<std::string> enumerateInteriorCells();
+	std::vector<std::string> enumerateWeathers();
 	std::vector<UniformInfo> enumerateUniformNames(const std::string& effectName);
 
 	bool toggleReShadeMenu(const std::unordered_set<std::string>& openMenus);

@@ -35,9 +35,7 @@ private:
 	std::vector<std::string> m_menuNames = Manager::GetSingleton()->enumerateMenus();
 	std::vector<std::string> m_worldSpaces = Manager::GetSingleton()->enumerateWorldSpaces();
 	std::vector<std::string> m_interiorCells = Manager::GetSingleton()->enumerateInteriorCells();
-	std::vector<std::string> m_weatherFlags = {
-		"kNone", "kRainy", "kPleasant", "kCloudy", "kSnow", "kPermAurora", "kAuroraFollowsSun"
-	};
+	std::vector<std::string> m_weathers = Manager::GetSingleton()->enumerateWeathers();
 
 	std::string m_currentEditingEffect{};
 	int m_editingEffectIndex = -1;

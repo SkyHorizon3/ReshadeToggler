@@ -644,7 +644,7 @@ void Menu::SpawnWeatherSettings(ImGuiID dockspace_id)
 				std::string editId = "EditEffect##" + headerUniqueId + std::to_string(i);
 
 				std::string currentEffectName = info.effectName;
-				std::string currentWeather = info.weatherFlag;
+				std::string currentWeather = info.weather;
 				bool currentEffectState = info.state;
 
 				ImGui::TableNextRow();
@@ -653,14 +653,14 @@ void Menu::SpawnWeatherSettings(ImGuiID dockspace_id)
 				ImGui::TableNextColumn();
 				if (ImGui::Checkbox(effectStateId.c_str(), &currentEffectState)) { valueChanged = true; }
 				ImGui::TableNextColumn();
-				if (CreateCombo(weatherId.c_str(), currentWeather, m_weatherFlags, ImGuiComboFlags_None)) { valueChanged = true; }
+				if (CreateCombo(weatherId.c_str(), currentWeather, m_weathers, ImGuiComboFlags_None)) { valueChanged = true; }
 				ImGui::TableNextColumn();
 				if (ImGui::Button(removeId.c_str()))
 				{
 					updatedInfoList[worldSpaceName].erase(
 						std::remove_if(updatedInfoList[worldSpaceName].begin(), updatedInfoList[worldSpaceName].end(),
 						[&info](const WeatherToggleInformation& weatherInfo) {
-							return weatherInfo.effectName == info.effectName && weatherInfo.weatherFlag == info.weatherFlag;
+							return weatherInfo.effectName == info.effectName && weatherInfo.weather == info.weather;
 						}
 					),
 						updatedInfoList[worldSpaceName].end()
@@ -687,7 +687,7 @@ void Menu::SpawnWeatherSettings(ImGuiID dockspace_id)
 				if (valueChanged)
 				{
 					info.effectName = currentEffectName;
-					info.weatherFlag = currentWeather;
+					info.weather = currentWeather;
 					info.state = currentEffectState;
 					updatedInfoList[worldSpaceName].at(i) = info;
 				}
@@ -1162,7 +1162,7 @@ void Menu::AddNewWeather(std::map<std::string, std::vector<WeatherToggleInformat
 
 		ImGui::Text("Select Weatherflags");
 		ImGui::BeginChild("WeatherFlagsRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
-		CreateTreeNode("Weatherflags", currentWeatherFlags, m_weatherFlags, weatherFlagSearchBuffer);
+		CreateTreeNode("Weather", currentWeatherFlags, m_weathers, weatherFlagSearchBuffer);
 		ImGui::EndChild();
 		ImGui::Separator();
 

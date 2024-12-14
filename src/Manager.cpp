@@ -170,6 +170,23 @@ std::vector<std::string> Manager::enumerateInteriorCells()
 	return interiorCells;
 }
 
+std::vector<std::string> Manager::enumerateWeathers()
+{
+	const auto& weathers = RE::TESDataHandler::GetSingleton()->GetFormArray<RE::TESWeather>();
+	std::vector<std::string> weatherIDs;
+
+	weatherIDs.reserve(weathers.size());
+	for (const auto& weather : weathers)
+	{
+		if (weather)
+		{
+			const std::string constructedKey = constructKey(weather);
+			weatherIDs.emplace_back(constructedKey);
+		}
+	}
+	
+	return weatherIDs;
+}
 
 std::string Manager::getPresetPath(const std::string& presetName) const
 {
@@ -205,6 +222,8 @@ bool Manager::toggleReShadeMenu(const std::unordered_set<std::string>& openMenus
 		}
 
 	}
+
+	return true;
 }
 
 void Manager::toggleEffectMenu(const std::unordered_set<std::string>& openMenus)
@@ -277,7 +296,7 @@ bool Manager::allowtoggleEffectWeather(const WeatherToggleInformation& cachedwea
 	{
 		if (cachedweather.effectName == newInfo.effectName &&
 			cachedweather.state == newInfo.state &&
-			cachedweather.weatherFlag == newInfo.weatherFlag)
+			cachedweather.weather == newInfo.weather)
 		{
 			return false;
 		}
@@ -333,32 +352,7 @@ void Manager::toggleEffectWeather()
 	static std::pair<RE::TESWorldSpace*, std::vector<WeatherToggleInformation>> lastWs;
 
 	const auto flags = sky->currentWeather->data.flags;
-	std::string weatherFlag{};
-
-	switch (flags.get())
-	{
-	case RE::TESWeather::WeatherDataFlag::kNone:
-		weatherFlag = "kNone";
-		break;
-	case RE::TESWeather::WeatherDataFlag::kRainy:
-		weatherFlag = "kRainy";
-		break;
-	case RE::TESWeather::WeatherDataFlag::kPleasant:
-		weatherFlag = "kPleasant";
-		break;
-	case RE::TESWeather::WeatherDataFlag::kCloudy:
-		weatherFlag = "kCloudy";
-		break;
-	case RE::TESWeather::WeatherDataFlag::kSnow:
-		weatherFlag = "kSnow";
-		break;
-	case RE::TESWeather::WeatherDataFlag::kPermAurora:
-		weatherFlag = "kPermAurora";
-		break;
-	case RE::TESWeather::WeatherDataFlag::kAuroraFollowsSun:
-		weatherFlag = "kAuroraFollowsSun";
-		break;
-	}
+	const std::string weather = constructKey(sky->currentWeather);
 
 	const auto ws = player->GetWorldspace();
 	const auto it = m_weatherToggleInfo.find(constructKey(ws));
@@ -386,19 +380,8 @@ void Manager::toggleEffectWeather()
 
 	for (auto& info : it->second)
 	{
-		if (info.weatherFlag == weatherFlag)
+		if (info.weather == weather)
 		{
-			if (m_reshadeToggle.find(it->first) != m_reshadeToggle.end() && m_reshadeToggle.at(it->first) == true)
-			{
-				toggleReshade(false);
-				lastWs.second.emplace_back(info);
-				continue;
-			}
-			else
-			{
-				toggleReshade(true);
-			}
-
 			toggleEffect(info.effectName.c_str(), info.state);
 			info.isToggled = true;
 			lastWs.first = ws;
@@ -456,17 +439,6 @@ void Manager::toggleEffectTime()
 
 		if (inRange)
 		{
-			if (m_reshadeToggle.find(it->first) != m_reshadeToggle.end() && m_reshadeToggle.at(it->first) == true)
-			{
-				toggleReshade(false);
-				lastWs.second.emplace_back(timeInfo);
-				continue;
-			}
-			else
-			{
-				toggleReshade(true);
-			}
-
 			if (!timeInfo.isToggled)
 			{
 				toggleEffect(timeInfo.effectName.c_str(), timeInfo.state);
@@ -525,17 +497,6 @@ void Manager::toggleEffectInterior(const bool isInterior)
 
 	for (auto& info : it->second)
 	{
-		if (m_reshadeToggle.find(it->first) != m_reshadeToggle.end() && m_reshadeToggle.at(it->first) == true)
-		{
-			toggleReshade(false);
-			lastCell.second.emplace_back(info);
-			continue;
-		}
-		else
-		{
-			toggleReshade(true);
-		}
-
 		toggleEffect(info.effectName.c_str(), info.state);
 
 		lastCell.second.emplace_back(info);
