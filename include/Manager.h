@@ -153,8 +153,6 @@ public:
 
 	bool effectExists(const char* effect);
 
-	std::unordered_map<std::string, bool>& getReShadeToggle() { return m_reshadeToggle; }
-
 private:
 
 	void setUniformValues(UniformInfo& uniform);
@@ -173,8 +171,6 @@ private:
 	std::map<std::string, std::vector<WeatherToggleInformation>> m_weatherToggleInfo;
 	std::map<std::string, std::vector<InteriorToggleInformation>> m_interiorToggleInfo;
 	std::map<std::string, std::vector<TimeToggleInformation>> m_timeToggleInfo;
-
-	std::unordered_map<std::string, bool> m_reshadeToggle;
 
 	// INI settings
 	std::string m_lastPresetName = "";

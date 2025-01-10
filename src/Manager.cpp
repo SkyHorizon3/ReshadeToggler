@@ -143,8 +143,7 @@ std::vector<std::string> Manager::enumerateWorldSpaces()
 	{
 		if (space)
 		{
-			const std::string constructedKey = constructKey(space);
-			worldSpaces.emplace_back(constructedKey);
+			worldSpaces.emplace_back(constructKey(space));
 		}
 	}
 
@@ -162,8 +161,7 @@ std::vector<std::string> Manager::enumerateInteriorCells()
 	{
 		if (cell)
 		{
-			const std::string constructedKey = constructKey(cell);
-			interiorCells.emplace_back(constructedKey);
+			interiorCells.emplace_back(constructKey(cell));
 		}
 	}
 
@@ -180,8 +178,7 @@ std::vector<std::string> Manager::enumerateWeathers()
 	{
 		if (weather)
 		{
-			const std::string constructedKey = constructKey(weather);
-			weatherIDs.emplace_back(constructedKey);
+			weatherIDs.emplace_back(constructKey(weather));
 		}
 	}
 
@@ -409,13 +406,10 @@ void Manager::toggleEffectTime()
 
 		if (inRange)
 		{
-			if (!timeInfo.isToggled)
-			{
-				toggleEffect(timeInfo.effectName.c_str(), timeInfo.state);
-				timeInfo.isToggled = true;
-				lastWs.first = ws;
-				lastWs.second.emplace_back(timeInfo);
-			}
+			toggleEffect(timeInfo.effectName.c_str(), timeInfo.state);
+			timeInfo.isToggled = true;
+			lastWs.first = ws;
+			lastWs.second.emplace_back(timeInfo);
 		}
 		else if (!inRange && timeInfo.isToggled)
 		{
@@ -566,91 +560,6 @@ bool Manager::serializeMap(const std::string& key, const std::map<std::string, s
 	return true;
 }
 
-/**
- * Alright, strap in because this is gonna be a rant.
- * What started as a simple task—serialize and deserialize a damn unordered map of booleans—turned into a hellhole of
- * compiler tantrums and endless pain. MSVC, in all its infinite wisdom, decided to throw an **Internal Compiler Error**
- * the moment I tried to make a template work with `std::unordered_map<std::string, bool>`. It's like it saw the map and
- * just had a mental breakdown. *What the hell is so hard about a map of strings to booleans, MSVC?!*
- *
- * After hours of trying to make this work with `else if constexpr`, I finally gave up. The compiler couldn’t handle it,
- * so now we have this horrific hack in `serializeArbitraryData` just to get past its bullshit:
- *
- * ```cpp
- * std::string serialized;
- * if (serializeReshadeToggle("ReShadeOff", m_reshadeToggle, serialized))
- * {
- *     jsonStream << (first ? (first = false, "") : ", ") << serialized;
- * }
- * else
- * {
- *     success = false;
- * }
- * ```
- *
- * Yeah, that’s right, we have to manually throw in a special case for `serializeReshadeToggle` because this compiler
- * couldn’t figure out a **simple unordered map of strings to booleans**. How the hell is this still an issue in 2024?
- * It’s not like I’m trying to get some complex, nested type here. It’s a damn map of `std::string` to `bool`! Is that too
- * much to ask?! No, MSVC just threw a tantrum and forced me into this stupid work-around.
- *
- * And don’t even get me started on deserialization. The exact same garbage had to be repeated in the deserialize function.
- * More duct tape, more hacks, all because MSVC can’t handle a map of strings to booleans with basic template magic.
- * This shit should *just work* (hehe Todd reference), but no, here I am, caught in this never-ending hell of handcrafting edge cases for a compiler
- * that just can’t handle the simplest of data structures.
- *
- * So here we are, with this abomination of code that works—but at what cost? A shattered soul and hours of frustration,
- * all because a compiler can’t handle an unordered map of strings and booleans without completely losing its mind.
- * Fucking hell.
- *
- * Yes, I'm done
- */
-
-bool Manager::serializeReshadeToggle(const std::string& name, const std::unordered_map<std::string, bool>& reshadeToggle, std::string& output)
-{
-	std::stringstream ss;
-	ss << "{ ";
-	bool first = true;
-
-	for (const auto& [key, value] : reshadeToggle)
-	{
-		if (!value) continue; // Skip keys with `false` values
-
-		if (!first) ss << ", ";
-		ss << "\"" << key << "\": true";
-		first = false;
-	}
-
-	ss << " }";
-	output = "\"" + name + "\": " + ss.str();
-	return true;
-}
-
-bool Manager::deserializeReshadeToggle(const std::string& key, const glz::json_t& json, std::unordered_map<std::string, bool>& reshadeToggle)
-{
-	if (json.contains(key))
-	{
-		const auto& toggleData = json[key].get_object();
-		reshadeToggle.clear();
-
-		for (const auto& [subKey, subValue] : toggleData)
-		{
-			if (!subValue.is_boolean())
-			{
-				SKSE::log::error("Invalid value type for subKey '{}' in reshadeToggle; expected boolean.", subKey);
-				return false;
-			}
-
-			reshadeToggle[subKey] = subValue.get_boolean();
-		}
-	}
-	else
-	{
-		SKSE::log::error("Key '{}' not found in JSON for reshadeToggle.", key);
-		return false;
-	}
-	return true;
-}
-
 // To some random person reading this, who is neither Sky nor me:
 // This abomination exists because when we started using glaze it did not yet support serialisation as we needed it.
 template <typename... Args>
@@ -697,16 +606,6 @@ bool Manager::serializeArbitraryData(std::string& output, const Args&... args)
 
 	// Process each argument pair
 	(processArg(args), ...);
-
-	std::string serialized;
-	if (serializeReshadeToggle("ReShadeOff", m_reshadeToggle, serialized))
-	{
-		jsonStream << (first ? (first = false, "") : ", ") << serialized;
-	}
-	else
-	{
-		success = false;
-	}
 
 	jsonStream << " }";
 	output = jsonStream.str();
@@ -809,7 +708,6 @@ bool Manager::deserializeArbitraryData(const std::string& buf, Args&... args)
 		};
 
 	((success &= process_pair(args)), ...);
-	success = deserializeReshadeToggle("ReShadeOff", json, m_reshadeToggle);
 	return success;
 }
 
