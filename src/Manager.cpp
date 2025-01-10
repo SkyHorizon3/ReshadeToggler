@@ -402,6 +402,11 @@ void Manager::toggleEffectTime()
 
 	for (auto& timeInfo : it->second)
 	{
+		if (timeInfo.id == 0)
+		{
+			timeInfo.id = IDGenerator::getNextID();
+		}
+
 		const bool inRange = timeWithinRange(timeInfo.startTime, timeInfo.stopTime);
 
 		if (inRange)
@@ -409,12 +414,36 @@ void Manager::toggleEffectTime()
 			toggleEffect(timeInfo.effectName.c_str(), timeInfo.state);
 			timeInfo.isToggled = true;
 			lastWs.first = ws;
-			lastWs.second.emplace_back(timeInfo);
+
+			auto existingIt = std::find_if(
+				lastWs.second.begin(),
+				lastWs.second.end(),
+				[&timeInfo](const TimeToggleInformation& existing) {
+					return existing.id == timeInfo.id;
+				});
+
+			if (existingIt != lastWs.second.end())
+			{
+				*existingIt = timeInfo;
+			}
+			else
+			{
+				lastWs.second.emplace_back(timeInfo);
+			}
 		}
 		else if (!inRange && timeInfo.isToggled)
 		{
 			toggleEffect(timeInfo.effectName.c_str(), !timeInfo.state);
 			timeInfo.isToggled = false;
+
+			lastWs.second.erase(
+				std::remove_if(
+				lastWs.second.begin(),
+				lastWs.second.end(),
+				[&timeInfo](const TimeToggleInformation& existing) {
+					return existing.id == timeInfo.id;
+				}),
+				lastWs.second.end());
 		}
 
 		for (auto& uniform : timeInfo.uniforms)

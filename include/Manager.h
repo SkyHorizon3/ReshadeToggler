@@ -87,6 +87,18 @@ struct TimeToggleInformation
 	bool isToggled = false;
 
 	std::vector<UniformInfo> uniforms;
+
+	uint64_t id = 0;
+};
+
+class IDGenerator
+{
+public:
+	static uint64_t getNextID()
+	{
+		static uint64_t currentID = 0;
+		return ++currentID;
+	}
 };
 
 class Manager : public ISingleton<Manager>
