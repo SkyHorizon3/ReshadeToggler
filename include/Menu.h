@@ -24,7 +24,8 @@ private:
 	void ClampInputValue(char* inputStr, int maxVal);
 	void EditValues(const std::string& effectName, std::vector<UniformInfo>& toReturn);
 	void HandleEffectEditing(std::vector<UniformInfo>& targetUniforms, std::string& currentEditingEffect, int& editingEffectIndex);
-	void DisableReShade(const std::string& headerUniqueId, const std::string& key);
+
+	void EffectOptions();
 private:
 
 	char m_inputBuffer[256] = { 0 };
@@ -39,6 +40,10 @@ private:
 
 	std::string m_currentEditingEffect{};
 	int m_editingEffectIndex = -1;
+	std::vector<std::string> m_currentEffects;
+	std::vector<std::string> m_currentToggleReason;
+	bool m_toggleState = false;
+	bool m_entireReShadeToggleOn = false;
 
 	ImVec4 m_lastMessageColor;
 	std::string m_lastMessage;

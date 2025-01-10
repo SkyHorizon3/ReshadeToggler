@@ -4,7 +4,7 @@
 
 void Menu::SettingsMenu()
 {
-	if (ImGui::Button("[PH] Configure SSEReshadeToggler"))
+	if (ImGui::Button("Configure Reshade Effect Toggler"))
 		m_openSettingsMenu = true;
 
 	if (m_openSettingsMenu)
@@ -149,8 +149,6 @@ void Menu::SpawnMenuSettings(ImGuiID dockspace_id)
 
 		if (ImGui::CollapsingHeader((menuName + "##" + headerUniqueId + "##Header").c_str(), ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_AllowItemOverlap))
 		{
-			DisableReShade(headerUniqueId, menuName);
-
 			ImGui::BeginTable(("EffectsTable##" + headerUniqueId).c_str(), 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg);
 			ImGui::TableSetupColumn(("Effect##" + headerUniqueId).c_str());
 			ImGui::TableSetupColumn(("State##" + headerUniqueId).c_str());
@@ -247,43 +245,39 @@ void Menu::SpawnMenuSettings(ImGuiID dockspace_id)
 
 void Menu::AddNewMenu(std::map<std::string, std::vector<MenuToggleInformation>>& updatedInfoList)
 {
-	static std::vector<std::string> currentMenus;
-	static std::vector<std::string> currentEffects;
-	static bool toggled = false;
 	static char menuSearchBuffer[256];
 	static char effectSearchBuffer[256];
 
 	if (ImGui::BeginPopupModal("Create Menu Entries", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		// Reset static variables for each popup
 		if (ImGui::IsWindowAppearing())
 		{
-			currentMenus.clear();
-			currentEffects.clear();
-			toggled = false;
+			m_currentToggleReason.clear();
+			m_currentEffects.clear();
+			m_toggleState = false;
+			m_entireReShadeToggleOn = false;
 		}
 
-		ImGui::Checkbox("Toggled On", &toggled);
-
+		ImGui::SeparatorText("Select Menus");
 		ImGui::BeginChild("MenusRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
-		CreateTreeNode("Menus", currentMenus, m_menuNames, menuSearchBuffer);
+		CreateTreeNode("Menus", m_currentToggleReason, m_menuNames, menuSearchBuffer, false);
 		ImGui::EndChild();
 
-		ImGui::Separator();
+		EffectOptions();
 
-		ImGui::Text("Select Effects");
+		ImGui::SeparatorText("Select Effects");
 		ImGui::BeginChild("EffectsRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
-		CreateTreeNode("Effects", currentEffects, m_effects, effectSearchBuffer);
+		CreateTreeNode("Effects", m_currentEffects, m_effects, effectSearchBuffer, m_entireReShadeToggleOn);
 		ImGui::EndChild();
 
 		ImGui::Separator();
 		if (ImGui::Button("Finish"))
 		{
-			for (const auto& menu : currentMenus)
+			for (const auto& menu : m_currentToggleReason)
 			{
-				for (const auto& effect : currentEffects)
+				for (const auto& effect : m_currentEffects)
 				{
-					updatedInfoList[menu].emplace_back(MenuToggleInformation{ effect, menu, toggled });
+					updatedInfoList[menu].emplace_back(MenuToggleInformation{ effect, menu, m_toggleState });
 				}
 			}
 
@@ -329,8 +323,6 @@ void Menu::SpawnTimeSettings(ImGuiID dockspace_id)
 
 		if (ImGui::CollapsingHeader((cellName + "##" + headerUniqueId + "##Header").c_str(), ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_AllowItemOverlap))
 		{
-			DisableReShade(headerUniqueId, cellName);
-
 			ImGui::BeginTable(("EffectsTable##" + headerUniqueId).c_str(), 6, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg);
 			ImGui::TableSetupColumn(("Effect##" + headerUniqueId).c_str());
 			ImGui::TableSetupColumn(("State##" + headerUniqueId).c_str());
@@ -507,8 +499,6 @@ void Menu::SpawnInteriorSettings(ImGuiID dockspace_id)
 
 		if (ImGui::CollapsingHeader((cellName + "##" + headerUniqueId + "##Header").c_str(), ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_AllowItemOverlap))
 		{
-			DisableReShade(headerUniqueId, cellName);
-
 			ImGui::BeginTable(("EffectsTable##" + headerUniqueId).c_str(), 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg);
 			ImGui::TableSetupColumn(("Effect##" + headerUniqueId).c_str());
 			ImGui::TableSetupColumn(("State##" + headerUniqueId).c_str());
@@ -622,8 +612,6 @@ void Menu::SpawnWeatherSettings(ImGuiID dockspace_id)
 
 		if (ImGui::CollapsingHeader((worldSpaceName + "##" + headerUniqueId + "##Header").c_str(), ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_AllowItemOverlap))
 		{
-			DisableReShade(headerUniqueId, worldSpaceName);
-
 			ImGui::BeginTable(("EffectsTable##" + headerUniqueId).c_str(), 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg);
 			ImGui::TableSetupColumn(("Effect##" + headerUniqueId).c_str());
 			ImGui::TableSetupColumn(("State##" + headerUniqueId).c_str());
@@ -719,11 +707,8 @@ void Menu::SpawnWeatherSettings(ImGuiID dockspace_id)
 
 void Menu::AddNewTime(std::map<std::string, std::vector<TimeToggleInformation>>& updatedInfoList)
 {
-	static std::vector<std::string> currentWorldSpaces;
-	static std::vector<std::string> currentEffects;
 	static float currentStartTime;
 	static float currentStopTime;
-	static bool toggled = false;
 	static char effectSearchBuffer[256];
 	static char worldCellSearchBuffer[256];
 
@@ -732,27 +717,28 @@ void Menu::AddNewTime(std::map<std::string, std::vector<TimeToggleInformation>>&
 
 	if (ImGui::BeginPopupModal("Create Time Entries", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		// Reset static variables for each popup
 		if (ImGui::IsWindowAppearing())
 		{
-			currentWorldSpaces.clear();
-			currentEffects.clear();
-			toggled = false;
+			m_currentToggleReason.clear();
+			m_currentEffects.clear();
+			m_toggleState = false;
+			m_entireReShadeToggleOn = false;
 			strcpy(startHourStr, "00");
 			strcpy(startMinuteStr, "00");
 			strcpy(stopHourStr, "00");
 			strcpy(stopMinuteStr, "00");
 		}
 
-		ImGui::Checkbox("Toggled On", &toggled);
-
-		ImGui::Text("Select Worldspaces");
+		ImGui::SeparatorText("Select Worldspaces");
 		ImGui::BeginChild("eBicWorldSpaceRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
-		CreateTreeNode("Worldspaces", currentWorldSpaces, m_worldSpaces, worldCellSearchBuffer);
+		CreateTreeNode("Worldspaces", m_currentToggleReason, m_worldSpaces, worldCellSearchBuffer, false);
 		ImGui::EndChild();
-		ImGui::Separator();
+
+		ImGui::SeparatorText("Select Time Period");
 
 		// Start time
+		ImGui::Text("Start Time: ");
+		ImGui::SameLine();
 		ImGui::TableNextColumn();
 		ImGui::PushItemWidth(35);
 		ImGui::InputText("##StartHours", startHourStr, sizeof(startHourStr), ImGuiInputTextFlags_CharsDecimal);
@@ -767,6 +753,8 @@ void Menu::AddNewTime(std::map<std::string, std::vector<TimeToggleInformation>>&
 		ImGui::PopItemWidth();
 
 		// Stop Time
+		ImGui::Text("Stop Time: ");
+		ImGui::SameLine();
 		ImGui::TableNextColumn();
 		ImGui::PushItemWidth(35);
 		ImGui::InputText("##StopHours", stopHourStr, sizeof(stopHourStr), ImGuiInputTextFlags_CharsDecimal);
@@ -780,10 +768,11 @@ void Menu::AddNewTime(std::map<std::string, std::vector<TimeToggleInformation>>&
 		if (strcmp(stopMinuteStr, "00") == 0 && strlen(stopMinuteStr) == 0) strcpy(stopMinuteStr, "0");
 		ImGui::PopItemWidth();
 
-		ImGui::Separator();
-		ImGui::Text("Select Effects");
+		EffectOptions();
+
+		ImGui::SeparatorText("Select Effects");
 		ImGui::BeginChild("EffectsRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
-		CreateTreeNode("Effects", currentEffects, m_effects, effectSearchBuffer);
+		CreateTreeNode("Effects", m_currentEffects, m_effects, effectSearchBuffer, m_entireReShadeToggleOn);
 		ImGui::EndChild();
 
 		ImGui::Separator();
@@ -799,11 +788,11 @@ void Menu::AddNewTime(std::map<std::string, std::vector<TimeToggleInformation>>&
 			currentStartTime = startHours + (startMinutes / 100.0f);
 			currentStopTime = stopHours + (stopMinutes / 100.0f);
 
-			for (const auto& ws : currentWorldSpaces)
+			for (const auto& ws : m_currentToggleReason)
 			{
-				for (const auto& effect : currentEffects)
+				for (const auto& effect : m_currentEffects)
 				{
-					updatedInfoList[ws].emplace_back(TimeToggleInformation{ effect, currentStartTime, currentStopTime, toggled });
+					updatedInfoList[ws].emplace_back(TimeToggleInformation{ effect, currentStartTime, currentStopTime, m_toggleState });
 				}
 			}
 
@@ -1076,9 +1065,6 @@ void Menu::EditValues(const std::string& effectName, std::vector<UniformInfo>& t
 
 void Menu::AddNewInterior(std::map<std::string, std::vector<InteriorToggleInformation>>& updatedInfoList)
 {
-	static std::vector<std::string> currentCells;
-	static std::vector<std::string> currentEffects;
-	static bool toggled = false;
 	static char effectSearchBuffer[256];
 	static char interiorCellSearchBuffer[256];
 
@@ -1087,31 +1073,32 @@ void Menu::AddNewInterior(std::map<std::string, std::vector<InteriorToggleInform
 		// Reset static variables for each popup
 		if (ImGui::IsWindowAppearing())
 		{
-			currentCells.clear();
-			currentEffects.clear();
-			toggled = false;
+			m_currentToggleReason.clear();
+			m_currentEffects.clear();
+			m_toggleState = false;
+			m_entireReShadeToggleOn = false;
 		}
 
-		ImGui::Checkbox("Toggled On", &toggled);
-
-		ImGui::Text("Select Interior Cells");
+		ImGui::SeparatorText("Select Interior Cells");
 		ImGui::BeginChild("CellRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
-		CreateTreeNode("Cells", currentCells, m_interiorCells, interiorCellSearchBuffer);
+		CreateTreeNode("Cells", m_currentToggleReason, m_interiorCells, interiorCellSearchBuffer, false);
 		ImGui::EndChild();
-		ImGui::Separator();
 
+		EffectOptions();
+
+		ImGui::SeparatorText("Select Effects");
 		ImGui::BeginChild("EffectsRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
-		CreateTreeNode("Effects", currentEffects, m_effects, effectSearchBuffer);
+		CreateTreeNode("Effects", m_currentEffects, m_effects, effectSearchBuffer, m_entireReShadeToggleOn);
 		ImGui::EndChild();
 
 		ImGui::Separator();
 		if (ImGui::Button("Finish"))
 		{
-			for (const auto& cell : currentCells)
+			for (const auto& cell : m_currentToggleReason)
 			{
-				for (const auto& effect : currentEffects)
+				for (const auto& effect : m_currentEffects)
 				{
-					updatedInfoList[cell].emplace_back(InteriorToggleInformation{ effect, toggled });
+					updatedInfoList[cell].emplace_back(InteriorToggleInformation{ effect, m_toggleState });
 				}
 			}
 
@@ -1132,10 +1119,7 @@ void Menu::AddNewInterior(std::map<std::string, std::vector<InteriorToggleInform
 
 void Menu::AddNewWeather(std::map<std::string, std::vector<WeatherToggleInformation>>& updatedInfoList)
 {
-	static std::vector<std::string> currentWorldSpaces;
-	static std::vector<std::string> currentEffects;
 	static std::vector<std::string> currentWeather;
-	static bool toggled = false;
 
 	// Local search buffers for each section
 	char worldSpaceSearchBuffer[256] = "";
@@ -1144,43 +1128,42 @@ void Menu::AddNewWeather(std::map<std::string, std::vector<WeatherToggleInformat
 
 	if (ImGui::BeginPopupModal("Create Weather Entries", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		// Reset static variables for each popup
 		if (ImGui::IsWindowAppearing())
 		{
-			currentWorldSpaces.clear();
+			m_currentToggleReason.clear();
 			currentWeather.clear();
-			currentEffects.clear();
-			toggled = false;
+			m_currentEffects.clear();
+			m_toggleState = false;
+			m_entireReShadeToggleOn = false;
 		}
 
-		ImGui::Checkbox("Toggled On", &toggled);
-
-		ImGui::Text("Select Worldspaces");
+		ImGui::SeparatorText("Select Worldspaces");
 		ImGui::BeginChild("WorldspacesRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
-		CreateTreeNode("Worldspaces", currentWorldSpaces, m_worldSpaces, worldSpaceSearchBuffer);
+		CreateTreeNode("Worldspaces", m_currentToggleReason, m_worldSpaces, worldSpaceSearchBuffer, false);
 		ImGui::EndChild();
 
-		ImGui::Text("Select Weather");
+		ImGui::SeparatorText("Select Weather");
 		ImGui::BeginChild("WeatherRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
-		CreateTreeNode("Weather", currentWeather, m_weathers, weatherSearchBuffer);
+		CreateTreeNode("Weather", currentWeather, m_weathers, weatherSearchBuffer, false);
 		ImGui::EndChild();
-		ImGui::Separator();
 
-		ImGui::Text("Select Effects");
+		EffectOptions();
+
+		ImGui::SeparatorText("Select Effects");
 		ImGui::BeginChild("EffectsRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
-		CreateTreeNode("Effects", currentEffects, m_effects, effectSearchBuffer);
+		CreateTreeNode("Effects", m_currentEffects, m_effects, effectSearchBuffer, m_entireReShadeToggleOn);
 		ImGui::EndChild();
 
 		ImGui::Separator();
 		if (ImGui::Button("Finish"))
 		{
-			for (const auto& ws : currentWorldSpaces)
+			for (const auto& ws : m_currentToggleReason)
 			{
-				for (const auto& effect : currentEffects)
+				for (const auto& effect : m_currentEffects)
 				{
 					for (const auto& weather : currentWeather)
 					{
-						updatedInfoList[ws].emplace_back(WeatherToggleInformation{ effect, weather, toggled });
+						updatedInfoList[ws].emplace_back(WeatherToggleInformation{ effect, weather, m_toggleState });
 					}
 				}
 			}
@@ -1284,26 +1267,45 @@ void Menu::HandleEffectEditing(std::vector<UniformInfo>& targetUniforms, std::st
 	}
 }
 
-void Menu::DisableReShade(const std::string& headerUniqueId, const std::string& key)
+void Menu::EffectOptions()
 {
-	const std::string boxId = "Disable ReShade##" + headerUniqueId;
-	auto& map = Manager::GetSingleton()->getReShadeToggle();
+	ImGui::SeparatorText("Effect Options");
+	ImGui::Checkbox("Effects Toggle State (on/off)", &m_toggleState);
 
-	bool currentState = false;
-	if (map.find(key) != map.end())
+	bool hasSelection = !m_currentEffects.empty();
+	if (m_currentEffects.size() == 1 && m_currentEffects[0] == "EntireReShade")
 	{
-		currentState = map[key];
+		hasSelection = false;
+		m_entireReShadeToggleOn = true;
 	}
 
-	if (ImGui::Checkbox(boxId.c_str(), &currentState))
+	if (hasSelection)
 	{
-		if (currentState)
+		ImGui::BeginDisabled();
+	}
+
+	if (ImGui::Checkbox("Toggle Entire ReShade", &m_entireReShadeToggleOn))
+	{
+		if (m_entireReShadeToggleOn)
 		{
-			map[key] = currentState;
+			// Add "EntireReShade" only if the list is empty and it is not already in the list
+			if (m_currentEffects.empty())
+			{
+				m_currentEffects.emplace_back("EntireReShade");
+			}
 		}
 		else
 		{
-			map.erase(key);
+			// Remove "EntireReShade" if it is being toggled off
+			m_currentEffects.erase(
+				std::remove(m_currentEffects.begin(), m_currentEffects.end(), "EntireReShade"),
+				m_currentEffects.end()
+			);
 		}
+	}
+
+	if (hasSelection)
+	{
+		ImGui::EndDisabled();
 	}
 }

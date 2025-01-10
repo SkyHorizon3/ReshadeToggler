@@ -111,7 +111,6 @@ public:
 	std::vector<std::string> enumerateWeathers();
 	std::vector<UniformInfo> enumerateUniformNames(const std::string& effectName);
 
-	bool toggleReShadeMenu(const std::unordered_set<std::string>& openMenus);
 	void toggleEffectMenu(const std::unordered_set<std::string>& openMenus);
 
 	void toggleEffectWeather();
@@ -122,7 +121,7 @@ public:
 
 	void toggleEffect(const char* technique, bool state) const;
 
-	void toggleReshade(bool state);
+	void toggleReshade(bool state) const;
 
 	std::map<std::string, std::vector<MenuToggleInformation>> getMenuToggleInfo() const { return m_menuToggleInfo; }
 	void setMenuToggleInfo(const std::map<std::string, std::vector<MenuToggleInformation>>& info) { m_menuToggleInfo = info; }

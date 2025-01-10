@@ -184,7 +184,7 @@ std::vector<std::string> Manager::enumerateWeathers()
 			weatherIDs.emplace_back(constructedKey);
 		}
 	}
-	
+
 	return weatherIDs;
 }
 
@@ -206,41 +206,11 @@ std::string Manager::constructKey(const RE::TESForm* form) const
 	return std::format("{:08X}|{}|{}", Utils::getTrimmedFormID(form), form->GetFormEditorID(), Utils::getModName(form));
 }
 
-bool Manager::toggleReShadeMenu(const std::unordered_set<std::string>& openMenus)
-{
-	for (const auto& menuName : openMenus)
-	{
-		const bool isOpen = openMenus.find(menuName) != openMenus.end();
-
-		if (isOpen && m_reshadeToggle.find(menuName) != m_reshadeToggle.end() && m_reshadeToggle.at(menuName) == true)
-		{
-			toggleReshade(false);
-		}
-		else
-		{
-			toggleReshade(true);
-		}
-
-	}
-
-	return true;
-}
-
 void Manager::toggleEffectMenu(const std::unordered_set<std::string>& openMenus)
 {
 	for (auto& [menuName, menuInfoList] : m_menuToggleInfo)
 	{
-		const bool isOpen = openMenus.find(menuName) != openMenus.end();
-
-		if (isOpen && m_reshadeToggle.find(menuName) != m_reshadeToggle.end() && m_reshadeToggle.at(menuName) == true)
-		{
-			toggleReshade(false);
-			continue;
-		}
-		else
-		{
-			toggleReshade(true);
-		}
+		const bool isOpen = (openMenus.find(menuName) != openMenus.end() || menuName == "EntireReShade");
 
 		for (auto& info : menuInfoList)
 		{
@@ -521,12 +491,19 @@ bool Manager::timeWithinRange(const float& startTime, const float& stopTime) con
 
 void Manager::toggleEffect(const char* effect, const bool state) const
 {
-	s_pRuntime->enumerate_techniques(effect, [&state](reshade::api::effect_runtime* runtime, reshade::api::effect_technique technique) {
-		runtime->set_technique_state(technique, state); // True = enabled; False = disabled
-		});
+	if (strcmp(effect, "EntireReShade") == 0)
+	{
+		toggleReshade(state);
+	}
+	else
+	{
+		s_pRuntime->enumerate_techniques(effect, [&state](reshade::api::effect_runtime* runtime, reshade::api::effect_technique technique) {
+			runtime->set_technique_state(technique, state); // True = enabled; False = disabled
+			});
+	}
 }
 
-void Manager::toggleReshade(bool state)
+void Manager::toggleReshade(bool state) const
 {
 	s_pRuntime->set_effects_state(state);
 }

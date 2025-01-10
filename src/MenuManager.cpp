@@ -39,12 +39,19 @@ bool MenuManager::CreateCombo(const char* label, std::string& currentItem, std::
 	return itemChanged;
 }
 
-bool MenuManager::CreateTreeNode(const char* label, std::vector<std::string>& selectedItems, std::vector<std::string>& items, char* searchBuffer)
+bool MenuManager::CreateTreeNode(const char* label, std::vector<std::string>& selectedItems, std::vector<std::string>& items, char* searchBuffer, bool entireReShadeToggleOn)
 {
 	bool itemsChanged = false;
 
 	if (ImGui::TreeNode(label))
 	{
+		const bool isEffectsLabel = strcmp(label, "Effects") == 0;
+
+		if (isEffectsLabel && entireReShadeToggleOn)
+		{
+			ImGui::BeginDisabled();
+		}
+
 		ImGui::InputTextWithHint("##Search", "Search...", searchBuffer, sizeof(searchBuffer));
 
 		if (ImGui::Button("Select All"))
@@ -66,6 +73,7 @@ bool MenuManager::CreateTreeNode(const char* label, std::vector<std::string>& se
 			if (strcasestr(item.c_str(), searchBuffer))
 			{
 				bool isSelected = std::find(selectedItems.begin(), selectedItems.end(), item) != selectedItems.end();
+
 				if (ImGui::Checkbox(item.c_str(), &isSelected))
 				{
 					if (isSelected)
@@ -79,6 +87,11 @@ bool MenuManager::CreateTreeNode(const char* label, std::vector<std::string>& se
 					itemsChanged = true;
 				}
 			}
+		}
+
+		if (isEffectsLabel && entireReShadeToggleOn)
+		{
+			ImGui::EndDisabled();
 		}
 
 		ImGui::TreePop();
