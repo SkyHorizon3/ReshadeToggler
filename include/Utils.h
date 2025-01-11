@@ -6,6 +6,8 @@ namespace Utils
 	std::string getModName(const RE::TESForm* form);
 	void loadINIStringSetting(const CSimpleIniA& a_ini, const char* a_sectionName, const char* a_settingName, std::string& a_setting);
 	std::string tolower(std::string_view a_str);
+	std::string getEditorID(RE::FormID a_formID);
+	std::string getFormEditorID(const RE::TESForm* a_form);
 }
 
 /**

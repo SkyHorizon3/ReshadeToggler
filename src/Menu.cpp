@@ -110,7 +110,7 @@ void Menu::SpawnMainPage(ImGuiID dockspace_id)
 	if (ImGui::Button("Save"))
 	{
 		m_saveConfigPopupOpen = true;
-		m_inputBuffer[0] = '\0';
+		m_inputBuffer01[0] = '\0';
 	}
 	SaveFile();
 
@@ -245,8 +245,6 @@ void Menu::SpawnMenuSettings(ImGuiID dockspace_id)
 
 void Menu::AddNewMenu(std::map<std::string, std::vector<MenuToggleInformation>>& updatedInfoList)
 {
-	static char menuSearchBuffer[256];
-	static char effectSearchBuffer[256];
 
 	if (ImGui::BeginPopupModal("Create Menu Entries", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
@@ -256,18 +254,20 @@ void Menu::AddNewMenu(std::map<std::string, std::vector<MenuToggleInformation>>&
 			m_currentEffects.clear();
 			m_toggleState = false;
 			m_entireReShadeToggleOn = false;
+			m_inputBuffer01[0] = '\0';
+			m_inputBuffer02[0] = '\0';
 		}
 
 		ImGui::SeparatorText("Select Menus");
 		ImGui::BeginChild("MenusRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
-		CreateTreeNode("Menus", m_currentToggleReason, m_menuNames, menuSearchBuffer, false);
+		CreateTreeNode("Menus", m_currentToggleReason, m_menuNames, m_inputBuffer01, sizeof(m_inputBuffer01), false);
 		ImGui::EndChild();
 
 		EffectOptions();
 
 		ImGui::SeparatorText("Select Effects");
 		ImGui::BeginChild("EffectsRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
-		CreateTreeNode("Effects", m_currentEffects, m_effects, effectSearchBuffer, m_entireReShadeToggleOn);
+		CreateTreeNode("Effects", m_currentEffects, m_effects, m_inputBuffer02, sizeof(m_inputBuffer02), m_entireReShadeToggleOn);
 		ImGui::EndChild();
 
 		ImGui::Separator();
@@ -715,8 +715,6 @@ void Menu::AddNewTime(std::map<std::string, std::vector<TimeToggleInformation>>&
 {
 	static float currentStartTime;
 	static float currentStopTime;
-	static char effectSearchBuffer[256];
-	static char worldCellSearchBuffer[256];
 
 	static char startHourStr[3] = "00", startMinuteStr[3] = "00";
 	static char stopHourStr[3] = "00", stopMinuteStr[3] = "00";
@@ -729,6 +727,8 @@ void Menu::AddNewTime(std::map<std::string, std::vector<TimeToggleInformation>>&
 			m_currentEffects.clear();
 			m_toggleState = false;
 			m_entireReShadeToggleOn = false;
+			m_inputBuffer01[0] = '\0';
+			m_inputBuffer02[0] = '\0';
 			strcpy(startHourStr, "00");
 			strcpy(startMinuteStr, "00");
 			strcpy(stopHourStr, "00");
@@ -737,8 +737,8 @@ void Menu::AddNewTime(std::map<std::string, std::vector<TimeToggleInformation>>&
 
 		ImGui::SeparatorText("Select Worldspaces");
 		ImGui::BeginChild("eBicWorldSpaceRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
-		CreateTreeNode("Worldspaces", m_currentToggleReason, m_worldSpaces, worldCellSearchBuffer, false);
-		CreateTreeNode("Cells", m_currentToggleReason, m_interiorCells, worldCellSearchBuffer, false);
+		CreateTreeNode("Worldspaces", m_currentToggleReason, m_worldSpaces, m_inputBuffer01, sizeof(m_inputBuffer01), false);
+		CreateTreeNode("Cells", m_currentToggleReason, m_interiorCells, m_inputBuffer01, sizeof(m_inputBuffer01), false);
 		ImGui::EndChild();
 
 		ImGui::SeparatorText("Select Time Period");
@@ -779,7 +779,7 @@ void Menu::AddNewTime(std::map<std::string, std::vector<TimeToggleInformation>>&
 
 		ImGui::SeparatorText("Select Effects");
 		ImGui::BeginChild("EffectsRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
-		CreateTreeNode("Effects", m_currentEffects, m_effects, effectSearchBuffer, m_entireReShadeToggleOn);
+		CreateTreeNode("Effects", m_currentEffects, m_effects, m_inputBuffer02, sizeof(m_inputBuffer02), m_entireReShadeToggleOn);
 		ImGui::EndChild();
 
 		ImGui::Separator();
@@ -1072,8 +1072,6 @@ void Menu::EditValues(const std::string& effectName, std::vector<UniformInfo>& t
 
 void Menu::AddNewInterior(std::map<std::string, std::vector<InteriorToggleInformation>>& updatedInfoList)
 {
-	static char effectSearchBuffer[256];
-	static char interiorCellSearchBuffer[256];
 
 	if (ImGui::BeginPopupModal("Create Interior Entries", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
@@ -1084,18 +1082,20 @@ void Menu::AddNewInterior(std::map<std::string, std::vector<InteriorToggleInform
 			m_currentEffects.clear();
 			m_toggleState = false;
 			m_entireReShadeToggleOn = false;
+			m_inputBuffer01[0] = '\0';
+			m_inputBuffer02[0] = '\0';
 		}
 
 		ImGui::SeparatorText("Select Interior Cells");
 		ImGui::BeginChild("CellRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
-		CreateTreeNode("Cells", m_currentToggleReason, m_interiorCells, interiorCellSearchBuffer, false);
+		CreateTreeNode("Cells", m_currentToggleReason, m_interiorCells, m_inputBuffer01, sizeof(m_inputBuffer01), false);
 		ImGui::EndChild();
 
 		EffectOptions();
 
 		ImGui::SeparatorText("Select Effects");
 		ImGui::BeginChild("EffectsRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
-		CreateTreeNode("Effects", m_currentEffects, m_effects, effectSearchBuffer, m_entireReShadeToggleOn);
+		CreateTreeNode("Effects", m_currentEffects, m_effects, m_inputBuffer02, sizeof(m_inputBuffer02), m_entireReShadeToggleOn);
 		ImGui::EndChild();
 
 		ImGui::Separator();
@@ -1128,11 +1128,6 @@ void Menu::AddNewWeather(std::map<std::string, std::vector<WeatherToggleInformat
 {
 	static std::vector<std::string> currentWeather;
 
-	// Local search buffers for each section
-	char worldSpaceSearchBuffer[256] = "";
-	char weatherSearchBuffer[256] = "";
-	char effectSearchBuffer[256] = "";
-
 	if (ImGui::BeginPopupModal("Create Weather Entries", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		if (ImGui::IsWindowAppearing())
@@ -1142,23 +1137,26 @@ void Menu::AddNewWeather(std::map<std::string, std::vector<WeatherToggleInformat
 			m_currentEffects.clear();
 			m_toggleState = false;
 			m_entireReShadeToggleOn = false;
+			m_inputBuffer01[0] = '\0';
+			m_inputBuffer02[0] = '\0';
+			m_inputBuffer03[0] = '\0';
 		}
 
 		ImGui::SeparatorText("Select Worldspaces");
 		ImGui::BeginChild("WorldspacesRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
-		CreateTreeNode("Worldspaces", m_currentToggleReason, m_worldSpaces, worldSpaceSearchBuffer, false);
+		CreateTreeNode("Worldspaces", m_currentToggleReason, m_worldSpaces, m_inputBuffer01, sizeof(m_inputBuffer01), false);
 		ImGui::EndChild();
 
 		ImGui::SeparatorText("Select Weather");
 		ImGui::BeginChild("WeatherRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
-		CreateTreeNode("Weather", currentWeather, m_weathers, weatherSearchBuffer, false);
+		CreateTreeNode("Weather", currentWeather, m_weathers, m_inputBuffer02, sizeof(m_inputBuffer02), false);
 		ImGui::EndChild();
 
 		EffectOptions();
 
 		ImGui::SeparatorText("Select Effects");
 		ImGui::BeginChild("EffectsRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
-		CreateTreeNode("Effects", m_currentEffects, m_effects, effectSearchBuffer, m_entireReShadeToggleOn);
+		CreateTreeNode("Effects", m_currentEffects, m_effects, m_inputBuffer03, sizeof(m_inputBuffer03), m_entireReShadeToggleOn);
 		ImGui::EndChild();
 
 		ImGui::Separator();
@@ -1199,14 +1197,19 @@ void Menu::SaveFile()
 		// Check if the "Save Config" modal is open
 		if (ImGui::BeginPopupModal("Save Config", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 		{
+			if (ImGui::IsWindowAppearing())
+			{
+				m_inputBuffer01[0] = '\0';
+			}
+
 			ImGui::Text("Enter the filename:");
 
-			ImGui::InputText("##FileName", m_inputBuffer, sizeof(m_inputBuffer));
+			ImGui::InputText("##FileName", m_inputBuffer01, sizeof(m_inputBuffer01));
 
 			if (ImGui::Button("Ok, Save!"))
 			{
 				// Use the provided filename or the default if empty
-				std::string filename = (m_inputBuffer[0] != '\0') ? m_inputBuffer : "NewPreset";
+				std::string filename = (m_inputBuffer01[0] != '\0') ? m_inputBuffer01 : "NewPreset";
 				filename = filename + ".json";
 				const auto start = std::chrono::high_resolution_clock::now();
 				const bool success = Manager::GetSingleton()->serializeJSONPreset(filename);

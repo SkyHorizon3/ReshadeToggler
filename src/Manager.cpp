@@ -200,7 +200,7 @@ std::string Manager::constructKey(const RE::TESForm* form) const
 	if (!form)
 		return "";
 
-	return std::format("{:08X}|{}|{}", Utils::getTrimmedFormID(form), form->GetFormEditorID(), Utils::getModName(form));
+	return std::format("{:08X}|{}|{}", Utils::getTrimmedFormID(form), Utils::getFormEditorID(form), Utils::getModName(form));
 }
 
 void Manager::toggleEffectMenu(const std::unordered_set<std::string>& openMenus)
@@ -451,16 +451,10 @@ void Manager::toggleEffectInterior(const bool isInterior)
 		return;
 
 	RE::TESObjectCELL* cell = player->GetParentCell();
-	if (cell)
-	{
-		cell = cell->IsInteriorCell() ? cell : nullptr;
-	}
-
 	const auto it = m_interiorToggleInfo.find(constructKey(cell));
-
 	const auto cachedCell = m_interiorToggleCache.first;
 
-	if (!isInterior || cachedCell && cachedCell->formID != cell->formID)
+	if (!cell || !isInterior || cachedCell && cachedCell->formID != cell->formID)
 	{
 		if (cachedCell)
 		{

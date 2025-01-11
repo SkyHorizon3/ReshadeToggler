@@ -54,6 +54,11 @@ void MessageListener(SKSE::MessagingInterface::Message* message)
 		// https://github.com/ianpatt/skse64/blob/09f520a2433747f33ae7d7c15b1164ca198932c3/skse64/PluginAPI.h#L193-L212
 	case SKSE::MessagingInterface::kPostPostLoad:
 	{
+		if (!GetModuleHandle(L"po3_Tweaks"))
+		{
+			SKSE::log::critical("po3_Tweaks not found, there can be issues with editorIDs!");
+		}
+
 		Hook::Install();
 		const auto manager = Manager::GetSingleton();
 		manager->parseINI();

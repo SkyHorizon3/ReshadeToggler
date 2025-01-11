@@ -39,7 +39,7 @@ bool MenuManager::CreateCombo(const char* label, std::string& currentItem, std::
 	return itemChanged;
 }
 
-bool MenuManager::CreateTreeNode(const char* label, std::vector<std::string>& selectedItems, std::vector<std::string>& items, char* searchBuffer, bool entireReShadeToggleOn)
+bool MenuManager::CreateTreeNode(const char* label, std::vector<std::string>& selectedItems, std::vector<std::string>& items, char* searchBuffer, size_t bufferSize, bool entireReShadeToggleOn)
 {
 	bool itemsChanged = false;
 
@@ -52,7 +52,7 @@ bool MenuManager::CreateTreeNode(const char* label, std::vector<std::string>& se
 			ImGui::BeginDisabled();
 		}
 
-		ImGui::InputTextWithHint("##Search", "Search...", searchBuffer, sizeof(searchBuffer));
+		ImGui::InputTextWithHint("##Search", "Search...", searchBuffer, bufferSize);
 
 		if (ImGui::Button("Select All"))
 		{

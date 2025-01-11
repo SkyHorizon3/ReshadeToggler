@@ -28,7 +28,10 @@ private:
 	void EffectOptions();
 private:
 
-	char m_inputBuffer[256] = { 0 };
+	char m_inputBuffer01[256] = { 0 };
+	char m_inputBuffer02[256] = { 0 };
+	char m_inputBuffer03[256] = { 0 };
+
 	std::string m_selectedPreset = Manager::GetSingleton()->getLastPreset();
 	std::vector<std::string> m_presets = Manager::GetSingleton()->enumeratePresets();
 
