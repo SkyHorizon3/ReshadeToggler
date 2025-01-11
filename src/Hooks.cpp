@@ -10,10 +10,18 @@ namespace Hook
 		{
 			func(); // Run original function
 
-			const auto& singleton = Manager::GetSingleton();
+			const auto singleton = Manager::GetSingleton();
 
-			singleton->toggleEffectWeather();
-			singleton->toggleEffectTime();
+			static auto lastCallTime = std::chrono::steady_clock::now();
+			auto now = std::chrono::steady_clock::now();
+
+			if (std::chrono::duration_cast<std::chrono::milliseconds>(now - lastCallTime).count() >= 500)
+			{
+				lastCallTime = now;
+
+				singleton->toggleEffectWeather();
+				singleton->toggleEffectTime();
+			}
 
 		};
 		static inline REL::Relocation<decltype(thunk)> func;

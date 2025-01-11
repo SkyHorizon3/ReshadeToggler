@@ -4,7 +4,7 @@
 
 void Menu::SettingsMenu()
 {
-	if (ImGui::Button("Configure Reshade Effect Toggler"))
+	if (ImGui::Button("Configure ReShade Effect Toggler"))
 		m_openSettingsMenu = true;
 
 	if (m_openSettingsMenu)
@@ -308,7 +308,7 @@ void Menu::SpawnTimeSettings(ImGuiID dockspace_id)
 	std::map<std::string, std::vector<TimeToggleInformation>> infoList = Manager::GetSingleton()->getTimeToggleInfo();
 	std::map<std::string, std::vector<TimeToggleInformation>> updatedInfoList = infoList;
 	static char inputBuffer[256] = "";
-	ImGui::InputTextWithHint("##Search", "Search Worldspace...", inputBuffer, sizeof(inputBuffer));
+	ImGui::InputTextWithHint("##Search", "Search Cell...", inputBuffer, sizeof(inputBuffer));
 
 	int headerId = -1;
 	int globalIndex = 0;
@@ -424,6 +424,8 @@ void Menu::SpawnTimeSettings(ImGuiID dockspace_id)
 						updatedInfoList[cellName].end()
 					);
 
+					Manager::GetSingleton()->removeTimeById(info);
+
 					if (updatedInfoList[cellName].empty())
 					{
 						updatedInfoList.erase(cellName);
@@ -535,6 +537,8 @@ void Menu::SpawnInteriorSettings(ImGuiID dockspace_id)
 					),
 						updatedInfoList[cellName].end()
 					);
+
+					Manager::GetSingleton()->removeInteriorById(info);
 
 					if (updatedInfoList[cellName].empty())
 					{
@@ -654,6 +658,8 @@ void Menu::SpawnWeatherSettings(ImGuiID dockspace_id)
 						updatedInfoList[worldSpaceName].end()
 					);
 
+					Manager::GetSingleton()->removeWeatherById(info);
+
 					if (updatedInfoList[worldSpaceName].empty())
 					{
 						updatedInfoList.erase(worldSpaceName);
@@ -732,6 +738,7 @@ void Menu::AddNewTime(std::map<std::string, std::vector<TimeToggleInformation>>&
 		ImGui::SeparatorText("Select Worldspaces");
 		ImGui::BeginChild("eBicWorldSpaceRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
 		CreateTreeNode("Worldspaces", m_currentToggleReason, m_worldSpaces, worldCellSearchBuffer, false);
+		CreateTreeNode("Cells", m_currentToggleReason, m_interiorCells, worldCellSearchBuffer, false);
 		ImGui::EndChild();
 
 		ImGui::SeparatorText("Select Time Period");

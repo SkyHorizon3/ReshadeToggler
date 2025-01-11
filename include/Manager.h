@@ -66,6 +66,7 @@ struct WeatherToggleInformation
 	std::string weather{};
 	bool state = true;
 	bool isToggled = false;
+	uint64_t id = 0;
 
 	std::vector<UniformInfo> uniforms;
 };
@@ -74,6 +75,7 @@ struct InteriorToggleInformation
 {
 	std::string effectName{};
 	bool state = true;
+	uint64_t id = 0;
 
 	std::vector<UniformInfo> uniforms;
 };
@@ -85,10 +87,10 @@ struct TimeToggleInformation
 	float stopTime = 0.f;
 	bool state = true;
 	bool isToggled = false;
+	uint64_t id = 0;
 
 	std::vector<UniformInfo> uniforms;
 
-	uint64_t id = 0;
 };
 
 class IDGenerator
@@ -134,6 +136,16 @@ public:
 	void toggleEffect(const char* technique, bool state) const;
 
 	void toggleReshade(bool state) const;
+
+	template <typename T>
+	void removeById(std::vector<T>& vec, const T& objToRemove);
+
+	void removeTimeById(const TimeToggleInformation& info) { removeById(m_timeToggleCache.second, info); }
+	void removeInteriorById(const InteriorToggleInformation& info) { removeById(m_interiorToggleCache.second, info); }
+	void removeWeatherById(const WeatherToggleInformation& info) { removeById(m_weatherToggleCache.second, info); }
+
+	template <typename T, typename V>
+	void updateOrAddObject(V& container, const T& objToUpdate);
 
 	std::map<std::string, std::vector<MenuToggleInformation>> getMenuToggleInfo() const { return m_menuToggleInfo; }
 	void setMenuToggleInfo(const std::map<std::string, std::vector<MenuToggleInformation>>& info) { m_menuToggleInfo = info; }
@@ -184,6 +196,11 @@ private:
 	std::map<std::string, std::vector<InteriorToggleInformation>> m_interiorToggleInfo;
 	std::map<std::string, std::vector<TimeToggleInformation>> m_timeToggleInfo;
 
+	// cache for reseting after toggling
+	std::pair<RE::TESForm*, std::vector<TimeToggleInformation>> m_timeToggleCache;
+	std::pair<RE::TESObjectCELL*, std::vector<InteriorToggleInformation>> m_interiorToggleCache;
+	std::pair<RE::TESWorldSpace*, std::vector<WeatherToggleInformation>> m_weatherToggleCache;
+
 	// INI settings
 	std::string m_lastPresetName = "";
 
@@ -209,9 +226,6 @@ private:
 
 	template<typename... Args>
 	bool deserializeArbitraryData(const std::string& buf, Args&... args);
-
-	bool serializeReshadeToggle(const std::string& name, const std::unordered_map<std::string, bool>& reshadeToggle, std::string& output);
-	bool deserializeReshadeToggle(const std::string& key, const glz::json_t& json, std::unordered_map<std::string, bool>& reshadeToggle);
 };
 
 extern reshade::api::effect_runtime* s_pRuntime;

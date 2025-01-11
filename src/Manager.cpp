@@ -316,28 +316,26 @@ void Manager::toggleEffectWeather()
 	if (m_weatherToggleInfo.empty() || !player || !sky || !sky->currentWeather || !ui || ui->GameIsPaused())
 		return;
 
-	static std::pair<RE::TESWorldSpace*, std::vector<WeatherToggleInformation>> lastWs;
-
 	const auto flags = sky->currentWeather->data.flags;
 	const std::string weather = constructKey(sky->currentWeather);
 
 	const auto ws = player->GetWorldspace();
 	const auto it = m_weatherToggleInfo.find(constructKey(ws));
-	const auto cachedWorldspace = lastWs.first;
+	const auto cachedWorldspace = m_weatherToggleCache.first;
 
 	if (!ws || cachedWorldspace && cachedWorldspace->formID != ws->formID) // player is in interior or changed worldspace
 	{
 		if (cachedWorldspace)
 		{
-			for (const auto& info : lastWs.second)
+			for (const auto& info : m_weatherToggleCache.second)
 			{
 				if (!ws || allowtoggleEffectWeather(info, it)) // change effect state back to original if it was toggled before
 				{
 					toggleEffect(info.effectName.c_str(), !info.state);
 				}
 			}
-			lastWs.first = nullptr;
-			lastWs.second.clear();
+			m_weatherToggleCache.first = nullptr;
+			m_weatherToggleCache.second.clear();
 		}
 		return;
 	}
@@ -345,19 +343,29 @@ void Manager::toggleEffectWeather()
 	if (it == m_weatherToggleInfo.end()) // no info for ws in unordered map
 		return;
 
+	SKSE::log::info("SizeWeather: {}", m_weatherToggleCache.second.size());
+
 	for (auto& info : it->second)
 	{
+		if (info.id == 0)
+		{
+			info.id = IDGenerator::getNextID();
+		}
+
 		if (info.weather == weather)
 		{
 			toggleEffect(info.effectName.c_str(), info.state);
 			info.isToggled = true;
-			lastWs.first = ws;
-			lastWs.second.emplace_back(info);
+			m_weatherToggleCache.first = ws;
+
+			updateOrAddObject(m_weatherToggleCache.second, info);
 		}
 		else if (info.isToggled)
 		{
 			toggleEffect(info.effectName.c_str(), !info.state);
 			info.isToggled = false;
+
+			removeById(m_weatherToggleCache.second, info);
 		}
 
 		for (auto& uniform : info.uniforms)
@@ -374,25 +382,28 @@ void Manager::toggleEffectTime()
 	if (m_timeToggleInfo.empty() || !player || !RE::Calendar::GetSingleton() || !ui || ui->GameIsPaused())
 		return;
 
-	static std::pair<RE::TESWorldSpace*, std::vector<TimeToggleInformation>> lastWs;
+	RE::TESForm* ws = player->GetWorldspace();
+	if (!ws)
+	{
+		ws = player->GetParentCell();
+	}
 
-	const auto ws = player->GetWorldspace();
 	const auto it = m_timeToggleInfo.find(constructKey(ws));
-	const auto cachedWorldspace = lastWs.first;
+	const auto cachedWorldspace = m_timeToggleCache.first;
 
 	if (!ws || cachedWorldspace && cachedWorldspace->formID != ws->formID)
 	{
 		if (cachedWorldspace)
 		{
-			for (const auto& info : lastWs.second)
+			for (const auto& info : m_timeToggleCache.second)
 			{
 				if (!ws || allowtoggleEffectTime(info, it))
 				{
 					toggleEffect(info.effectName.c_str(), !info.state);
 				}
 			}
-			lastWs.first = nullptr;
-			lastWs.second.clear();
+			m_timeToggleCache.first = nullptr;
+			m_timeToggleCache.second.clear();
 		}
 		return;
 	}
@@ -413,37 +424,16 @@ void Manager::toggleEffectTime()
 		{
 			toggleEffect(timeInfo.effectName.c_str(), timeInfo.state);
 			timeInfo.isToggled = true;
-			lastWs.first = ws;
+			m_timeToggleCache.first = ws;
 
-			auto existingIt = std::find_if(
-				lastWs.second.begin(),
-				lastWs.second.end(),
-				[&timeInfo](const TimeToggleInformation& existing) {
-					return existing.id == timeInfo.id;
-				});
-
-			if (existingIt != lastWs.second.end())
-			{
-				*existingIt = timeInfo;
-			}
-			else
-			{
-				lastWs.second.emplace_back(timeInfo);
-			}
+			updateOrAddObject(m_timeToggleCache.second, timeInfo);
 		}
 		else if (!inRange && timeInfo.isToggled)
 		{
 			toggleEffect(timeInfo.effectName.c_str(), !timeInfo.state);
 			timeInfo.isToggled = false;
 
-			lastWs.second.erase(
-				std::remove_if(
-				lastWs.second.begin(),
-				lastWs.second.end(),
-				[&timeInfo](const TimeToggleInformation& existing) {
-					return existing.id == timeInfo.id;
-				}),
-				lastWs.second.end());
+			removeById(m_timeToggleCache.second, timeInfo);
 		}
 
 		for (auto& uniform : timeInfo.uniforms)
@@ -460,46 +450,51 @@ void Manager::toggleEffectInterior(const bool isInterior)
 	if (m_interiorToggleInfo.empty() || !player)
 		return;
 
-	static std::pair<RE::TESObjectCELL*, std::vector<InteriorToggleInformation>> lastCell;
-	const auto cell = player->GetParentCell();
+	RE::TESObjectCELL* cell = player->GetParentCell();
+	if (cell)
+	{
+		cell = cell->IsInteriorCell() ? cell : nullptr;
+	}
+
 	const auto it = m_interiorToggleInfo.find(constructKey(cell));
 
-	const auto cachedCell = lastCell.first;
+	const auto cachedCell = m_interiorToggleCache.first;
 
-	if (!isInterior || cachedCell && isInterior && cachedCell->formID != cell->formID)
+	if (!isInterior || cachedCell && cachedCell->formID != cell->formID)
 	{
 		if (cachedCell)
 		{
-			for (auto& info : lastCell.second)
+			for (auto& info : m_interiorToggleCache.second)
 			{
 				if (!isInterior || allowtoggleEffectInterior(info, it))
 				{
 					toggleEffect(info.effectName.c_str(), !info.state);
 				}
 			}
-			lastCell.first = nullptr;
-			lastCell.second.clear();
+			m_interiorToggleCache.first = nullptr;
+			m_interiorToggleCache.second.clear();
 		}
-
-		return;
 	}
 
 	if (it == m_interiorToggleInfo.end())
 		return;
 
-
 	for (auto& info : it->second)
 	{
-		toggleEffect(info.effectName.c_str(), info.state);
+		if (info.id == 0)
+		{
+			info.id = IDGenerator::getNextID();
+		}
 
-		lastCell.second.emplace_back(info);
+		toggleEffect(info.effectName.c_str(), info.state);
+		updateOrAddObject(m_interiorToggleCache.second, info);
 
 		for (auto& uniform : info.uniforms)
 		{
 			setUniformValues(uniform);
 		}
 	}
-	lastCell.first = cell;
+	m_interiorToggleCache.first = cell;
 
 }
 
@@ -529,6 +524,39 @@ void Manager::toggleEffect(const char* effect, const bool state) const
 void Manager::toggleReshade(bool state) const
 {
 	s_pRuntime->set_effects_state(state);
+}
+
+template <typename T>
+void Manager::removeById(std::vector<T>& vec, const T& objToRemove)
+{
+	vec.erase(
+		std::remove_if(
+		vec.begin(),
+		vec.end(),
+		[&objToRemove](const T& existing) {
+			return existing.id == objToRemove.id;
+		}),
+		vec.end());
+}
+
+template <typename T, typename V>
+void Manager::updateOrAddObject(V& container, const T& objToUpdate)
+{
+	auto existingIt = std::find_if(
+		container.begin(),
+		container.end(),
+		[&objToUpdate](const T& existing) {
+			return existing.id == objToUpdate.id;
+		});
+
+	if (existingIt != container.end())
+	{
+		*existingIt = objToUpdate;
+	}
+	else
+	{
+		container.emplace_back(objToUpdate);
+	}
 }
 
 #pragma region TemplateTomfoolery
@@ -805,6 +833,9 @@ template void Manager::setUniformValue<int>(const reshade::api::effect_uniform_v
 
 template void Manager::getUniformValue<unsigned int>(const reshade::api::effect_uniform_variable& uniformVariable, unsigned int* values, size_t count);
 template void Manager::setUniformValue<unsigned int>(const reshade::api::effect_uniform_variable& uniformVariable, unsigned int* values, size_t count);
+
+template void Manager::removeById<InteriorToggleInformation>(std::vector<InteriorToggleInformation>& vec, const InteriorToggleInformation& objToRemove);
+
 #pragma endregion
 
 
