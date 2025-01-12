@@ -316,10 +316,7 @@ void Manager::toggleEffectWeather()
 	if (m_weatherToggleInfo.empty() || !player || !sky || !sky->currentWeather || !ui || ui->GameIsPaused())
 		return;
 
-	const auto flags = sky->currentWeather->data.flags;
-	const std::string weather = constructKey(sky->currentWeather);
-
-	const auto ws = player->GetWorldspace();
+	RE::TESForm* ws = player->GetWorldspace();
 	const auto it = m_weatherToggleInfo.find(constructKey(ws));
 	const auto cachedWorldspace = m_weatherToggleCache.first;
 
@@ -343,7 +340,7 @@ void Manager::toggleEffectWeather()
 	if (it == m_weatherToggleInfo.end()) // no info for ws in unordered map
 		return;
 
-	SKSE::log::info("SizeWeather: {}", m_weatherToggleCache.second.size());
+	const std::string weather = constructKey(sky->currentWeather);
 
 	for (auto& info : it->second)
 	{
@@ -450,7 +447,7 @@ void Manager::toggleEffectInterior(const bool isInterior)
 	if (m_interiorToggleInfo.empty() || !player)
 		return;
 
-	RE::TESObjectCELL* cell = player->GetParentCell();
+	RE::TESForm* cell = player->GetParentCell();
 	const auto it = m_interiorToggleInfo.find(constructKey(cell));
 	const auto cachedCell = m_interiorToggleCache.first;
 

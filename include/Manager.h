@@ -198,8 +198,8 @@ private:
 
 	// cache for reseting after toggling
 	std::pair<RE::TESForm*, std::vector<TimeToggleInformation>> m_timeToggleCache;
-	std::pair<RE::TESObjectCELL*, std::vector<InteriorToggleInformation>> m_interiorToggleCache;
-	std::pair<RE::TESWorldSpace*, std::vector<WeatherToggleInformation>> m_weatherToggleCache;
+	std::pair<RE::TESForm*, std::vector<InteriorToggleInformation>> m_interiorToggleCache;
+	std::pair<RE::TESForm*, std::vector<WeatherToggleInformation>> m_weatherToggleCache;
 
 	// INI settings
 	std::string m_lastPresetName = "";

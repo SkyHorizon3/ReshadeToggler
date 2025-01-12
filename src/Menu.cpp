@@ -1280,7 +1280,7 @@ void Menu::HandleEffectEditing(std::vector<UniformInfo>& targetUniforms, std::st
 void Menu::EffectOptions()
 {
 	ImGui::SeparatorText("Effect Options");
-	ImGui::Checkbox("Effects Toggle State (on/off)", &m_toggleState);
+	ImGui::Checkbox("Toggle State (on/off)", &m_toggleState);
 
 	bool hasSelection = !m_currentEffects.empty();
 	if (m_currentEffects.size() == 1 && m_currentEffects[0] == "EntireReShade")

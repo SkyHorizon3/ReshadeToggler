@@ -10,8 +10,6 @@ namespace Hook
 		{
 			func(); // Run original function
 
-			const auto singleton = Manager::GetSingleton();
-
 			static auto lastCallTime = std::chrono::steady_clock::now();
 			auto now = std::chrono::steady_clock::now();
 
@@ -19,6 +17,7 @@ namespace Hook
 			{
 				lastCallTime = now;
 
+				const auto singleton = Manager::GetSingleton();
 				singleton->toggleEffectWeather();
 				singleton->toggleEffectTime();
 			}
