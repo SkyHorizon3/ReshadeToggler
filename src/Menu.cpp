@@ -246,7 +246,7 @@ void Menu::SpawnMenuSettings(ImGuiID dockspace_id)
 void Menu::AddNewMenu(std::map<std::string, std::vector<MenuToggleInformation>>& updatedInfoList)
 {
 
-	if (ImGui::BeginPopupModal("Create Menu Entries", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::BeginPopupModal("Create Menu Entries", NULL, ImGuiWindowFlags_None))
 	{
 		if (ImGui::IsWindowAppearing())
 		{
@@ -258,15 +258,17 @@ void Menu::AddNewMenu(std::map<std::string, std::vector<MenuToggleInformation>>&
 			m_inputBuffer02[0] = '\0';
 		}
 
+		ImVec2 availableSpace = ImGui::GetContentRegionAvail();
+		float childHeight = availableSpace.y * 0.35f;
 		ImGui::SeparatorText("Select Menus");
-		ImGui::BeginChild("MenusRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
+		ImGui::BeginChild("MenusRegion", ImVec2(availableSpace.x, childHeight), true, ImGuiWindowFlags_HorizontalScrollbar);
 		CreateTreeNode("Menus", m_currentToggleReason, m_menuNames, m_inputBuffer01, sizeof(m_inputBuffer01), false);
 		ImGui::EndChild();
 
 		EffectOptions();
 
 		ImGui::SeparatorText("Select Effects");
-		ImGui::BeginChild("EffectsRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
+		ImGui::BeginChild("EffectsRegion", ImVec2(availableSpace.x, childHeight), true, ImGuiWindowFlags_HorizontalScrollbar);
 		CreateTreeNode("Effects", m_currentEffects, m_effects, m_inputBuffer02, sizeof(m_inputBuffer02), m_entireReShadeToggleOn);
 		ImGui::EndChild();
 
@@ -719,7 +721,7 @@ void Menu::AddNewTime(std::map<std::string, std::vector<TimeToggleInformation>>&
 	static char startHourStr[3] = "00", startMinuteStr[3] = "00";
 	static char stopHourStr[3] = "00", stopMinuteStr[3] = "00";
 
-	if (ImGui::BeginPopupModal("Create Time Entries", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::BeginPopupModal("Create Time Entries", NULL, ImGuiWindowFlags_None))
 	{
 		if (ImGui::IsWindowAppearing())
 		{
@@ -735,8 +737,10 @@ void Menu::AddNewTime(std::map<std::string, std::vector<TimeToggleInformation>>&
 			strcpy(stopMinuteStr, "00");
 		}
 
+		ImVec2 availableSpace = ImGui::GetContentRegionAvail();
+		float childHeight = availableSpace.y * 0.30f;
 		ImGui::SeparatorText("Select Worldspaces");
-		ImGui::BeginChild("eBicWorldSpaceRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
+		ImGui::BeginChild("eBicWorldSpaceRegion", ImVec2(availableSpace.x, childHeight), true, ImGuiWindowFlags_HorizontalScrollbar);
 		CreateTreeNode("Worldspaces", m_currentToggleReason, m_worldSpaces, m_inputBuffer01, sizeof(m_inputBuffer01), false);
 		CreateTreeNode("Cells", m_currentToggleReason, m_interiorCells, m_inputBuffer01, sizeof(m_inputBuffer01), false);
 		ImGui::EndChild();
@@ -778,7 +782,7 @@ void Menu::AddNewTime(std::map<std::string, std::vector<TimeToggleInformation>>&
 		EffectOptions();
 
 		ImGui::SeparatorText("Select Effects");
-		ImGui::BeginChild("EffectsRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
+		ImGui::BeginChild("EffectsRegion", ImVec2(availableSpace.x, childHeight), true, ImGuiWindowFlags_HorizontalScrollbar);
 		CreateTreeNode("Effects", m_currentEffects, m_effects, m_inputBuffer02, sizeof(m_inputBuffer02), m_entireReShadeToggleOn);
 		ImGui::EndChild();
 
@@ -1073,7 +1077,7 @@ void Menu::EditValues(const std::string& effectName, std::vector<UniformInfo>& t
 void Menu::AddNewInterior(std::map<std::string, std::vector<InteriorToggleInformation>>& updatedInfoList)
 {
 
-	if (ImGui::BeginPopupModal("Create Interior Entries", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::BeginPopupModal("Create Interior Entries", NULL, ImGuiWindowFlags_None))
 	{
 		// Reset static variables for each popup
 		if (ImGui::IsWindowAppearing())
@@ -1086,15 +1090,17 @@ void Menu::AddNewInterior(std::map<std::string, std::vector<InteriorToggleInform
 			m_inputBuffer02[0] = '\0';
 		}
 
+		ImVec2 availableSpace = ImGui::GetContentRegionAvail();
+		float childHeight = availableSpace.y * 0.35f;
 		ImGui::SeparatorText("Select Interior Cells");
-		ImGui::BeginChild("CellRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
+		ImGui::BeginChild("CellRegion", ImVec2(availableSpace.x, childHeight), true, ImGuiWindowFlags_HorizontalScrollbar);
 		CreateTreeNode("Cells", m_currentToggleReason, m_interiorCells, m_inputBuffer01, sizeof(m_inputBuffer01), false);
 		ImGui::EndChild();
 
 		EffectOptions();
 
 		ImGui::SeparatorText("Select Effects");
-		ImGui::BeginChild("EffectsRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
+		ImGui::BeginChild("EffectsRegion", ImVec2(availableSpace.x, childHeight), true, ImGuiWindowFlags_HorizontalScrollbar);
 		CreateTreeNode("Effects", m_currentEffects, m_effects, m_inputBuffer02, sizeof(m_inputBuffer02), m_entireReShadeToggleOn);
 		ImGui::EndChild();
 
@@ -1128,7 +1134,7 @@ void Menu::AddNewWeather(std::map<std::string, std::vector<WeatherToggleInformat
 {
 	static std::vector<std::string> currentWeather;
 
-	if (ImGui::BeginPopupModal("Create Weather Entries", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::BeginPopupModal("Create Weather Entries", NULL, ImGuiWindowFlags_None))
 	{
 		if (ImGui::IsWindowAppearing())
 		{
@@ -1142,20 +1148,22 @@ void Menu::AddNewWeather(std::map<std::string, std::vector<WeatherToggleInformat
 			m_inputBuffer03[0] = '\0';
 		}
 
+		ImVec2 availableSpace = ImGui::GetContentRegionAvail();
+		float childHeight = availableSpace.y * 0.25f;
 		ImGui::SeparatorText("Select Worldspaces");
-		ImGui::BeginChild("WorldspacesRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
+		ImGui::BeginChild("WorldspacesRegion", ImVec2(availableSpace.x, childHeight), true, ImGuiWindowFlags_HorizontalScrollbar);
 		CreateTreeNode("Worldspaces", m_currentToggleReason, m_worldSpaces, m_inputBuffer01, sizeof(m_inputBuffer01), false);
 		ImGui::EndChild();
 
 		ImGui::SeparatorText("Select Weather");
-		ImGui::BeginChild("WeatherRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
+		ImGui::BeginChild("WeatherRegion", ImVec2(availableSpace.x, childHeight), true, ImGuiWindowFlags_HorizontalScrollbar);
 		CreateTreeNode("Weather", currentWeather, m_weathers, m_inputBuffer02, sizeof(m_inputBuffer02), false);
 		ImGui::EndChild();
 
 		EffectOptions();
 
 		ImGui::SeparatorText("Select Effects");
-		ImGui::BeginChild("EffectsRegion", ImVec2(350, 200), true, ImGuiWindowFlags_HorizontalScrollbar);
+		ImGui::BeginChild("EffectsRegion", ImVec2(availableSpace.x, childHeight), true, ImGuiWindowFlags_HorizontalScrollbar);
 		CreateTreeNode("Effects", m_currentEffects, m_effects, m_inputBuffer03, sizeof(m_inputBuffer03), m_entireReShadeToggleOn);
 		ImGui::EndChild();
 
