@@ -125,7 +125,7 @@ public:
 	std::vector<std::string> enumerateWeathers();
 	std::vector<UniformInfo> enumerateUniformNames(const std::string& effectName);
 
-	void toggleEffectMenu(const std::unordered_set<std::string>& openMenus);
+	void toggleEffectMenu(const std::string& menu, const bool opening);
 
 	void toggleEffectWeather();
 
@@ -135,7 +135,7 @@ public:
 
 	void toggleEffect(const char* technique, bool state) const;
 
-	void toggleReshade(bool state) const;
+	void toggleReshade(const bool state) const;
 
 	template <typename T>
 	void removeById(std::vector<T>& vec, const T& objToRemove);

@@ -203,32 +203,49 @@ std::string Manager::constructKey(const RE::TESForm* form) const
 	return std::format("{:08X}|{}|{}", Utils::getTrimmedFormID(form), Utils::getFormEditorID(form), Utils::getModName(form));
 }
 
-void Manager::toggleEffectMenu(const std::unordered_set<std::string>& openMenus)
+void Manager::toggleEffectMenu(const std::string& menu, const bool opening)
 {
-	for (auto& [menuName, menuInfoList] : m_menuToggleInfo)
-	{
-		const bool isOpen = (openMenus.find(menuName) != openMenus.end() || menuName == "EntireReShade");
+	auto it = m_menuToggleInfo.find(menu);
+	if (it == m_menuToggleInfo.end())
+		return;
 
-		for (auto& info : menuInfoList)
+	static std::unordered_map<std::string, uint16_t> usage;
+
+	for (auto& info : it->second)
+	{
+		auto& effectUsageCount = usage[info.effectName];
+
+		if (opening)
 		{
-			if (isOpen && !info.isToggled)
+			if (!info.isToggled)
 			{
-				toggleEffect(info.effectName.c_str(), info.state);
+				if (effectUsageCount == 0) // not active yet
+				{
+					toggleEffect(info.effectName.c_str(), info.state);
+				}
+				effectUsageCount++;
 				info.isToggled = true;
 			}
-			else if (!isOpen && info.isToggled)
+		}
+		else
+		{
+			if (info.isToggled)
 			{
-				toggleEffect(info.effectName.c_str(), !info.state);
+				effectUsageCount--;
+				if (effectUsageCount == 0) // effect isnt needed anymore
+				{
+					toggleEffect(info.effectName.c_str(), !info.state);
+					usage.erase(info.effectName);
+				}
 				info.isToggled = false;
 			}
+		}
 
-			for (auto& uniform : info.uniforms)
-			{
-				setUniformValues(uniform);
-			}
+		for (auto& uniform : info.uniforms)
+		{
+			setUniformValues(uniform);
 		}
 	}
-
 }
 
 void Manager::setUniformValues(UniformInfo& uniform)
@@ -512,7 +529,7 @@ void Manager::toggleEffect(const char* effect, const bool state) const
 	}
 }
 
-void Manager::toggleReshade(bool state) const
+void Manager::toggleReshade(const bool state) const
 {
 	s_pRuntime->set_effects_state(state);
 }
