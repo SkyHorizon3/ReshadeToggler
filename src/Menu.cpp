@@ -9,12 +9,9 @@ void Menu::SettingsMenu()
 
 	if (m_openSettingsMenu)
 	{
-		// TODO: ensure that we are only putting the colors onto our own window and its subwindows
-		//SetColors();
-
 		// Create the main settings window with docking enabled
 		ImGui::SetNextWindowSize(GetNativeViewportSizeScaled(0.6f), ImGuiCond_FirstUseEver);
-		ImGui::Begin("[PH] Settings Window", &m_openSettingsMenu);
+		ImGui::Begin("Settings", &m_openSettingsMenu);
 		static int currentTab = 0;
 
 		if (ImGui::BeginTabBar("SettingsTabBar"))
@@ -57,8 +54,6 @@ void Menu::SettingsMenu()
 		case 3: SpawnInteriorSettings(dockspaceId); break;
 		case 4: SpawnWeatherSettings(dockspaceId); break;
 		}
-
-		//RemoveColors();
 	}
 }
 
