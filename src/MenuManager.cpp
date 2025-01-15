@@ -107,5 +107,3 @@ ImVec2 MenuManager::GetNativeViewportSizeScaled(float scale)
 	const auto Size = ImGui::GetWindowSize();
 	return { Size.x * scale, Size.y * scale };
 }
-
-#pragma endregion
